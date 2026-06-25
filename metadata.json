@@ -1,0 +1,8 @@
+{
+  "name": "SEGAF - Prefeitura Municipal de Portel",
+  "description": "Secretaria de Gestão Administrativa e Financeira - Emissão e acompanhamento de passagens fluviais e marítimas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

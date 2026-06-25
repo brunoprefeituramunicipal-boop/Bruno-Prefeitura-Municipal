@@ -1,0 +1,191 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System user with specific roles and access permissions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nome": { "type": "string" },
+        "login": { "type": "string" },
+        "email": { "type": "string" },
+        "perfil": { "type": "string", "enum": ["Administrador", "Operador", "Consulta"] },
+        "status": { "type": "string", "enum": ["Ativo", "Inativo"] },
+        "senha": { "type": "string" },
+        "primeiroAcesso": { "type": "boolean" }
+      },
+      "required": ["id", "nome", "login", "perfil", "status", "senha"]
+    },
+    "Passageiro": {
+      "title": "Passageiro",
+      "description": "Passenger registration data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nome": { "type": "string" },
+        "cpf": { "type": "string" },
+        "rg": { "type": "string" },
+        "dataNascimento": { "type": "string" },
+        "sexo": { "type": "string" },
+        "telefone": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "email": { "type": "string" },
+        "endereco": { "type": "string" },
+        "bairro": { "type": "string" },
+        "cidade": { "type": "string" },
+        "estado": { "type": "string" },
+        "nomeMae": { "type": "string" },
+        "nomePai": { "type": "string" },
+        "cartaoSus": { "type": "string" },
+        "observacoes": { "type": "string" },
+        "foto": { "type": "string" }
+      },
+      "required": ["id", "nome", "cpf"]
+    },
+    "Empresa": {
+      "title": "Empresa",
+      "description": "Navigation company operating fluvial or maritime routes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "razaoSocial": { "type": "string" },
+        "nomeFantasia": { "type": "string" },
+        "cnpj": { "type": "string" },
+        "inscricaoEstadual": { "type": "string" },
+        "telefone": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "email": { "type": "string" },
+        "endereco": { "type": "string" },
+        "responsavel": { "type": "string" },
+        "observacoes": { "type": "string" },
+        "status": { "type": "string", "enum": ["Ativo", "Inativo"] }
+      },
+      "required": ["id", "razaoSocial", "nomeFantasia", "cnpj", "status"]
+    },
+    "Embarcacao": {
+      "title": "Embarcacao",
+      "description": "Vessel used for transportation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nome": { "type": "string" },
+        "tipo": { "type": "string", "enum": ["Navio", "Balsa", "Lancha", "Ferry Boat"] },
+        "empresaId": { "type": "string" },
+        "capacidade": { "type": "integer" },
+        "status": { "type": "string", "enum": ["Ativo", "Inativo"] }
+      },
+      "required": ["id", "nome", "tipo", "empresaId", "status"]
+    },
+    "Acomodacao": {
+      "title": "Acomodacao",
+      "description": "Vessel accommodation types (Hammock, Cabin, Seat, Suite, etc.)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nome": { "type": "string" },
+        "descricao": { "type": "string" },
+        "status": { "type": "string", "enum": ["Ativo", "Inativo"] }
+      },
+      "required": ["id", "nome", "status"]
+    },
+    "Motivo": {
+      "title": "Motivo",
+      "description": "Reason for travel (Medical consult, exams, surgery, admin service, etc.)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "descricao": { "type": "string" }
+      },
+      "required": ["id", "descricao"]
+    },
+    "Autorizador": {
+      "title": "Autorizador",
+      "description": "Authority approving the travel ticket",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nome": { "type": "string" },
+        "cargo": { "type": "string" },
+        "setor": { "type": "string" },
+        "assinaturaDigital": { "type": "string" },
+        "status": { "type": "string", "enum": ["Ativo", "Inativo"] }
+      },
+      "required": ["id", "nome", "cargo", "status"]
+    },
+    "Passagem": {
+      "title": "Passagem",
+      "description": "Fluvial or maritime travel ticket record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "passageiroId": { "type": "string" },
+        "empresaId": { "type": "string" },
+        "embarcacaoId": { "type": "string" },
+        "acomodacaoId": { "type": "string" },
+        "motivoId": { "type": "string" },
+        "autorizadorId": { "type": "string" },
+        "dataLancamento": { "type": "string" },
+        "dataViagem": { "type": "string" },
+        "tipoViagem": { "type": "string", "enum": ["Ida", "Retorno", "Ida e Retorno"] },
+        "destino": { "type": "string" },
+        "valor": { "type": "number" },
+        "desconto": { "type": "number" },
+        "valorFinal": { "type": "number" },
+        "status": { "type": "string", "enum": ["Solicitada", "Aprovada", "Emitida", "Confirmada", "Realizada", "Cancelada"] },
+        "observacoes": { "type": "string" },
+        "usuarioResponsavel": { "type": "string" }
+      },
+      "required": ["id", "passageiroId", "empresaId", "embarcacaoId", "acomodacaoId", "motivoId", "autorizadorId", "dataViagem", "tipoViagem", "destino", "valor", "valorFinal", "status"]
+    },
+    "Log": {
+      "title": "Log",
+      "description": "Audit trail logs for administrative accountability",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "usuario": { "type": "string" },
+        "acao": { "type": "string" },
+        "dataHora": { "type": "string" }
+      },
+      "required": ["id", "usuario", "acao", "dataHora"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Collection of system users"
+    },
+    "passageiros": {
+      "schema": { "$ref": "#/entities/Passageiro" },
+      "description": "Collection of municipal passengers"
+    },
+    "empresas": {
+      "schema": { "$ref": "#/entities/Empresa" },
+      "description": "Collection of river navigation companies"
+    },
+    "embarcacoes": {
+      "schema": { "$ref": "#/entities/Embarcacao" },
+      "description": "Collection of registered vessels"
+    },
+    "acomodacoes": {
+      "schema": { "$ref": "#/entities/Acomodacao" },
+      "description": "Collection of vessel accommodations"
+    },
+    "motivos": {
+      "schema": { "$ref": "#/entities/Motivo" },
+      "description": "Collection of travel reasons"
+    },
+    "autorizadores": {
+      "schema": { "$ref": "#/entities/Autorizador" },
+      "description": "Collection of municipal ticket authorizers"
+    },
+    "passagens": {
+      "schema": { "$ref": "#/entities/Passagem" },
+      "description": "Collection of issued fluvial travel tickets"
+    },
+    "logs": {
+      "schema": { "$ref": "#/entities/Log" },
+      "description": "Audit and compliance log trail"
+    }
+  }
+}
