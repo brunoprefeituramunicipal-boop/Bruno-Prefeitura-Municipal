@@ -84,12 +84,18 @@ export default function EmissaoPassagens({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Auto-scroll when modal opens
+  // Auto-scroll and prevent background scroll when modal opens
   useEffect(() => {
     if (isModalOpen) {
       window.scrollTo({ top: 0, behavior: "smooth" });
       document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
     }
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isModalOpen]);
 
   // Quick destinations presets

@@ -48,12 +48,18 @@ export default function Empresas({ empresas, userPerfil, userLogin, onRefresh }:
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Auto-scroll when modal opens
+  // Auto-scroll and prevent background scroll when modal opens
   React.useEffect(() => {
     if (isModalOpen) {
       window.scrollTo({ top: 0, behavior: "smooth" });
       document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
     }
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isModalOpen]);
 
   const openAddModal = () => {
@@ -316,9 +322,9 @@ export default function Empresas({ empresas, userPerfil, userLogin, onRefresh }:
 
       {/* Register/Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all my-8">
-            <div className="bg-slate-900 p-5 text-white flex justify-between items-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-2xl md:w-[80vw] md:max-w-[1200px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
+            <div className="bg-slate-900 p-5 text-white flex justify-between items-center shrink-0">
               <h3 className="text-base font-bold flex items-center space-x-2">
                 <Building2 className="w-5 h-5 text-blue-400" />
                 <span>{editingEmpresa ? "Editar Empresa de Navegação" : "Cadastrar Nova Empresa"}</span>
@@ -331,124 +337,126 @@ export default function Empresas({ empresas, userPerfil, userLogin, onRefresh }:
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {error && (
-                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl flex items-center space-x-2">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>{error}</span>
-                </div>
-              )}
+            <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden h-full">
+              <div className="p-6 overflow-y-auto space-y-4 flex-1">
+                {error && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>{error}</span>
+                  </div>
+                )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Razão Social *</label>
-                  <input
-                    type="text"
-                    value={razaoSocial}
-                    onChange={(e) => setRazaoSocial(e.target.value)}
-                    required
-                    autoFocus
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Nome Fantasia *</label>
-                  <input
-                    type="text"
-                    value={nomeFantasia}
-                    onChange={(e) => setNomeFantasia(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">CNPJ *</label>
-                  <input
-                    type="text"
-                    placeholder="00.000.000/0000-00"
-                    value={cnpj}
-                    onChange={(e) => setCnpj(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Inscrição Estadual</label>
-                  <input
-                    type="text"
-                    value={inscricaoEstadual}
-                    onChange={(e) => setInscricaoEstadual(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Telefone</label>
-                  <input
-                    type="text"
-                    value={telefone}
-                    onChange={(e) => setTelefone(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">WhatsApp</label>
-                  <input
-                    type="text"
-                    value={whatsapp}
-                    onChange={(e) => setWhatsapp(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Email</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Responsável</label>
-                  <input
-                    type="text"
-                    value={responsavel}
-                    onChange={(e) => setResponsavel(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Endereço Completo</label>
-                  <input
-                    type="text"
-                    value={endereco}
-                    onChange={(e) => setEndereco(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Observações</label>
-                  <textarea
-                    rows={2}
-                    value={observacoes}
-                    onChange={(e) => setObservacoes(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Status</label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as "Ativo" | "Inativo")}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  >
-                    <option value="Ativo">Ativo</option>
-                    <option value="Inativo">Inativo</option>
-                  </select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Razão Social *</label>
+                    <input
+                      type="text"
+                      value={razaoSocial}
+                      onChange={(e) => setRazaoSocial(e.target.value)}
+                      required
+                      autoFocus
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Nome Fantasia *</label>
+                    <input
+                      type="text"
+                      value={nomeFantasia}
+                      onChange={(e) => setNomeFantasia(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">CNPJ *</label>
+                    <input
+                      type="text"
+                      placeholder="00.000.000/0000-00"
+                      value={cnpj}
+                      onChange={(e) => setCnpj(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Inscrição Estadual</label>
+                    <input
+                      type="text"
+                      value={inscricaoEstadual}
+                      onChange={(e) => setInscricaoEstadual(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Telefone</label>
+                    <input
+                      type="text"
+                      value={telefone}
+                      onChange={(e) => setTelefone(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">WhatsApp</label>
+                    <input
+                      type="text"
+                      value={whatsapp}
+                      onChange={(e) => setWhatsapp(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Email</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Responsável</label>
+                    <input
+                      type="text"
+                      value={responsavel}
+                      onChange={(e) => setResponsavel(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Endereço Completo</label>
+                    <input
+                      type="text"
+                      value={endereco}
+                      onChange={(e) => setEndereco(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Observações</label>
+                    <textarea
+                      rows={2}
+                      value={observacoes}
+                      onChange={(e) => setObservacoes(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Status</label>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as "Ativo" | "Inativo")}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    >
+                      <option value="Ativo">Ativo</option>
+                      <option value="Inativo">Inativo</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+              <div className="flex justify-end space-x-2 p-4 bg-slate-50 border-t border-slate-100 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}

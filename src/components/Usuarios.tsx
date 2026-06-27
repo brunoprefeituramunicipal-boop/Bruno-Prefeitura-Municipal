@@ -77,12 +77,18 @@ export default function Usuarios({ currentUser, onRefresh }: UsuariosProps) {
   const [perfil, setPerfil] = useState<UserPerfil>("Operador");
   const [status, setStatus] = useState<UserStatus>("Ativo");
 
-  // Auto-scroll when modal opens
+  // Auto-scroll and prevent background scroll when modal opens
   React.useEffect(() => {
     if (isModalOpen) {
       window.scrollTo({ top: 0, behavior: "smooth" });
       document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
     }
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isModalOpen]);
 
   // Personal Password Change states
@@ -553,9 +559,9 @@ export default function Usuarios({ currentUser, onRefresh }: UsuariosProps) {
 
       {/* ADD/EDIT USER MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-xl overflow-hidden my-auto animate-fadeIn">
-            <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md md:w-[80vw] md:max-w-[600px] border border-slate-200 shadow-xl overflow-hidden transform transition-all flex flex-col max-h-[90vh] animate-fadeIn">
+            <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center shrink-0">
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                 <UserIcon className="w-4 h-4 text-blue-600" />
                 {editingUser ? "Editar Usuário" : "Novo Usuário"}
@@ -568,100 +574,102 @@ export default function Usuarios({ currentUser, onRefresh }: UsuariosProps) {
               </button>
             </div>
 
-            <form onSubmit={handleSaveUser} className="p-6 space-y-4">
-              <div>
-                <label className="block text-slate-500 text-[10px] font-bold mb-1.5 uppercase tracking-wider">
-                  Nome Completo
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                    <UserIcon className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="text"
-                    value={nome}
-                    onChange={(e) => setNome(e.target.value)}
-                    placeholder="Nome do colaborador"
-                    autoFocus
-                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs focus:outline-none focus:border-blue-500 transition-all"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-500 text-[10px] font-bold mb-1.5 uppercase tracking-wider">
-                  E-mail institucional
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="email@segaf.portel.pa.gov.br"
-                    disabled={!!editingUser}
-                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs focus:outline-none focus:border-blue-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                    required
-                  />
-                </div>
-              </div>
-
-              {!editingUser && (
+            <form onSubmit={handleSaveUser} className="flex flex-col overflow-hidden h-full">
+              <div className="p-6 overflow-y-auto space-y-4 flex-1">
                 <div>
                   <label className="block text-slate-500 text-[10px] font-bold mb-1.5 uppercase tracking-wider">
-                    Senha de Acesso Inicial
+                    Nome Completo
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                      <KeyRound className="w-4 h-4" />
+                      <UserIcon className="w-4 h-4" />
                     </div>
                     <input
-                      type="password"
-                      value={senha}
-                      onChange={(e) => setSenha(e.target.value)}
-                      placeholder="Mínimo 6 caracteres"
+                      type="text"
+                      value={nome}
+                      onChange={(e) => setNome(e.target.value)}
+                      placeholder="Nome do colaborador"
+                      autoFocus
                       className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs focus:outline-none focus:border-blue-500 transition-all"
                       required
                     />
                   </div>
                 </div>
-              )}
 
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-slate-500 text-[10px] font-bold mb-1.5 uppercase tracking-wider">
-                    Perfil
+                    E-mail institucional
                   </label>
-                  <select
-                    value={perfil}
-                    onChange={(e) => setPerfil(e.target.value as UserPerfil)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs focus:outline-none focus:border-blue-500 transition-all"
-                  >
-                    <option value="Administrador">Administrador</option>
-                    <option value="Operador">Operador</option>
-                    <option value="Consulta">Consulta</option>
-                  </select>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                      <Mail className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="type"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="email@segaf.portel.pa.gov.br"
+                      disabled={!!editingUser}
+                      className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs focus:outline-none focus:border-blue-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      required
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-slate-500 text-[10px] font-bold mb-1.5 uppercase tracking-wider">
-                    Status da Conta
-                  </label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as UserStatus)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs focus:outline-none focus:border-blue-500 transition-all"
-                  >
-                    <option value="Ativo">Ativo</option>
-                    <option value="Inativo">Inativo</option>
-                  </select>
+                {!editingUser && (
+                  <div>
+                    <label className="block text-slate-500 text-[10px] font-bold mb-1.5 uppercase tracking-wider">
+                      Senha de Acesso Inicial
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                        <KeyRound className="w-4 h-4" />
+                      </div>
+                      <input
+                        type="password"
+                        value={senha}
+                        onChange={(e) => setSenha(e.target.value)}
+                        placeholder="Mínimo 6 caracteres"
+                        className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs focus:outline-none focus:border-blue-500 transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-500 text-[10px] font-bold mb-1.5 uppercase tracking-wider">
+                      Perfil
+                    </label>
+                    <select
+                      value={perfil}
+                      onChange={(e) => setPerfil(e.target.value as UserPerfil)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs focus:outline-none focus:border-blue-500 transition-all"
+                    >
+                      <option value="Administrador">Administrador</option>
+                      <option value="Operador">Operador</option>
+                      <option value="Consulta">Consulta</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-500 text-[10px] font-bold mb-1.5 uppercase tracking-wider">
+                      Status da Conta
+                    </label>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as UserStatus)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs focus:outline-none focus:border-blue-500 transition-all"
+                    >
+                      <option value="Ativo">Ativo</option>
+                      <option value="Inativo">Inativo</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              <div className="pt-4 flex space-x-3">
+              <div className="p-4 bg-slate-50 border-t border-slate-100 flex space-x-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
