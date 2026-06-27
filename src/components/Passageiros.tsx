@@ -20,6 +20,7 @@ import {
   History,
   FileSpreadsheet
 } from "lucide-react";
+import { ModalPortal } from "./ModalPortal";
 
 interface PassageirosProps {
   passageiros: Passageiro[];
@@ -52,19 +53,7 @@ export default function Passageiros({ passageiros, passagens, userPerfil, userLo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Auto-scroll and prevent background scroll when modal opens
-  React.useEffect(() => {
-    if (isModalOpen) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isModalOpen]);
+
 
   // Webcam Capture states
   const [useWebcam, setUseWebcam] = useState(false);
@@ -364,268 +353,250 @@ export default function Passageiros({ passageiros, passagens, userPerfil, userLo
       </div>
 
       {/* History Modal */}
-      {isHistoryOpen && selectedPassageiro && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
-            <div className="bg-slate-900 p-5 text-white flex justify-between items-center">
-              <h3 className="text-sm font-bold flex items-center space-x-2">
-                <History className="w-5 h-5 text-blue-400" />
-                <span>Histórico de Passagens: {selectedPassageiro.nome}</span>
-              </h3>
-              <button onClick={() => setIsHistoryOpen(false)} className="text-slate-400 hover:text-white text-lg">&times;</button>
-            </div>
-
-            <div className="p-6 max-h-[400px] overflow-y-auto space-y-3">
-              {getPassengerHistory(selectedPassageiro.id).length === 0 ? (
-                <p className="text-slate-400 text-xs text-center py-8">Este passageiro ainda não possui passagens emitidas no sistema.</p>
-              ) : (
-                getPassengerHistory(selectedPassageiro.id).map(ticket => (
-                  <div key={ticket.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-bold text-slate-800">Cód: {ticket.id.substring(0, 8).toUpperCase()}</span>
-                        <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-bold text-[9px] uppercase border border-blue-100">
-                          {ticket.status}
-                        </span>
-                      </div>
-                      <p className="text-slate-500">Destino: <strong className="text-slate-700">{ticket.destino}</strong> | Saída: <strong>{formatarDataParaExibicao(ticket.dataViagem)}</strong></p>
-                      <p className="text-[10px] text-slate-400">Tipo: {ticket.tipoViagem} | Acomodação: {ticket.id}</p>
-                    </div>
-
-                    <div className="text-right">
-                      <span className="block text-[10px] text-slate-400 font-semibold uppercase">Valor Pago</span>
-                      <strong className="text-sm text-emerald-600">R$ {ticket.valorFinal.toFixed(2)}</strong>
-                    </div>
+      <ModalPortal
+        isOpen={isHistoryOpen && !!selectedPassageiro}
+        onClose={() => setIsHistoryOpen(false)}
+        title={`Histórico de Passagens: ${selectedPassageiro?.nome || ""}`}
+        icon={<History className="w-5 h-5 text-blue-400" />}
+        footer={
+          <button
+            type="button"
+            onClick={() => setIsHistoryOpen(false)}
+            className="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-semibold hover:bg-slate-700 transition cursor-pointer"
+          >
+            Fechar Histórico
+          </button>
+        }
+      >
+        <div className="space-y-3">
+          {selectedPassageiro && getPassengerHistory(selectedPassageiro.id).length === 0 ? (
+            <p className="text-slate-400 text-xs text-center py-8">Este passageiro ainda não possui passagens emitidas no sistema.</p>
+          ) : (
+            selectedPassageiro && getPassengerHistory(selectedPassageiro.id).map(ticket => (
+              <div key={ticket.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-bold text-slate-800">Cód: {ticket.id.substring(0, 8).toUpperCase()}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-bold text-[9px] uppercase border border-blue-100">
+                      {ticket.status}
+                    </span>
                   </div>
-                ))
-              )}
-            </div>
+                  <p className="text-slate-500">Destino: <strong className="text-slate-700">{ticket.destino}</strong> | Saída: <strong>{formatarDataParaExibicao(ticket.dataViagem)}</strong></p>
+                  <p className="text-[10px] text-slate-400">Tipo: {ticket.tipoViagem} | Acomodação: {ticket.id}</p>
+                </div>
 
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
-              <button onClick={() => setIsHistoryOpen(false)} className="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-semibold hover:bg-slate-700 transition">
-                Fechar Histórico
-              </button>
-            </div>
-          </div>
+                <div className="text-right">
+                  <span className="block text-[10px] text-slate-400 font-semibold uppercase">Valor Pago</span>
+                  <strong className="text-sm text-emerald-600">R$ {ticket.valorFinal.toFixed(2)}</strong>
+                </div>
+              </div>
+            ))
+          )}
         </div>
-      )}
+      </ModalPortal>
 
       {/* Form Dialog Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-2xl md:w-[80vw] md:max-w-[1200px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
-            <div className="bg-slate-900 p-5 text-white flex justify-between items-center shrink-0">
-              <h3 className="text-sm font-bold flex items-center space-x-2">
-                <Users className="w-5 h-5 text-blue-400" />
-                <span>{selectedPassageiro ? "Editar Perfil do Passageiro" : "Registrar Novo Passageiro"}</span>
-              </h3>
-              <button 
-                onClick={() => {
-                  setIsModalOpen(false);
-                  stopCamera();
-                }}
-                className="text-slate-400 hover:text-white transition text-lg"
+      <ModalPortal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          stopCamera();
+        }}
+        title={selectedPassageiro ? "Editar Perfil do Passageiro" : "Registrar Novo Passageiro"}
+        icon={<Users className="w-5 h-5 text-blue-400" />}
+        onSubmit={handleSubmit}
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                setIsModalOpen(false);
+                stopCamera();
+              }}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-blue-600/10 transition cursor-pointer"
+            >
+              {loading ? "Salvando..." : "Salvar Passageiro"}
+            </button>
+          </>
+        }
+      >
+        {error && (
+          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl flex items-center space-x-2 mb-4">
+            <ShieldAlert className="w-4 h-4" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* Picture Capturing block */}
+        <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-slate-50 rounded-xl border border-slate-200/60 mb-4">
+          <div className="relative w-28 h-28 rounded-full border-2 border-slate-200 bg-white overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+            {fotoUrl ? (
+              <img src={fotoUrl} alt="Foto de Perfil" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              <Users className="w-12 h-12 text-slate-300" />
+            )}
+            {fotoUrl && (
+              <button
+                type="button"
+                onClick={() => setFotoUrl("")}
+                className="absolute inset-0 bg-black/40 text-white font-bold text-[10px] flex items-center justify-center opacity-0 hover:opacity-100 transition"
               >
-                &times;
+                Remover foto
               </button>
+            )}
+          </div>
+
+          <div className="space-y-3.5 flex-1 w-full text-center sm:text-left">
+            <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Foto do Passageiro</h4>
+            <p className="text-xs text-slate-400">Capture uma foto com a câmera do dispositivo ou carregue uma imagem JPG/PNG.</p>
+            
+            <div className="flex flex-wrap gap-2.5 justify-center sm:justify-start">
+              <button
+                type="button"
+                onClick={startCamera}
+                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition cursor-pointer"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>Usar Câmera</span>
+              </button>
+
+              <label className="px-3.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition cursor-pointer shadow-xs">
+                <Upload className="w-3.5 h-3.5" />
+                <span>Carregar Arquivo</span>
+                <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, "foto")} className="hidden" />
+              </label>
             </div>
-
-            <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden h-full">
-              <div className="p-6 overflow-y-auto space-y-4 flex-1">
-                {error && (
-                  <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl flex items-center space-x-2">
-                    <ShieldAlert className="w-4 h-4" />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                {/* Picture Capturing block */}
-                <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-slate-50 rounded-xl border border-slate-200/60">
-                  <div className="relative w-28 h-28 rounded-full border-2 border-slate-200 bg-white overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
-                    {fotoUrl ? (
-                      <img src={fotoUrl} alt="Foto de Perfil" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    ) : (
-                      <Users className="w-12 h-12 text-slate-300" />
-                    )}
-                    {fotoUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setFotoUrl("")}
-                        className="absolute inset-0 bg-black/40 text-white font-bold text-[10px] flex items-center justify-center opacity-0 hover:opacity-100 transition"
-                      >
-                        Remover foto
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="space-y-3.5 flex-1 w-full text-center sm:text-left">
-                    <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Foto do Passageiro</h4>
-                    <p className="text-xs text-slate-400">Capture uma foto com a câmera do dispositivo ou carregue uma image JPG/PNG.</p>
-                    
-                    <div className="flex flex-wrap gap-2.5 justify-center sm:justify-start">
-                      <button
-                        type="button"
-                        onClick={startCamera}
-                        className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition"
-                      >
-                        <Camera className="w-3.5 h-3.5" />
-                        <span>Usar Câmera</span>
-                      </button>
-
-                      <label className="px-3.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition cursor-pointer">
-                        <Upload className="w-3.5 h-3.5" />
-                        <span>Carregar Arquivo</span>
-                        <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, "foto")} className="hidden" />
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Webcam feed modal state */}
-                {useWebcam && (
-                  <div className="p-4 bg-slate-900 rounded-xl border border-slate-800 space-y-3 flex flex-col items-center">
-                    <video ref={videoRef} autoPlay className="rounded-lg border border-slate-700 w-[320px] h-[240px] bg-black" />
-                    <div className="flex space-x-2">
-                      <button
-                        type="button"
-                        onClick={capturePhoto}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5"
-                      >
-                        <Sparkles className="w-4 h-4 text-yellow-300" />
-                        <span>Bater Foto</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={stopCamera}
-                        className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-xs font-semibold"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Fields block */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-slate-100">
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Nome Completo *</label>
-                    <input
-                      type="text"
-                      value={nome}
-                      onChange={(e) => setNome(e.target.value)}
-                      required
-                      autoFocus
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">CPF *</label>
-                    <input
-                      type="text"
-                      value={cpf}
-                      onChange={(e) => setCpf(e.target.value)}
-                      required
-                      placeholder="000.000.000-00"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">RG</label>
-                    <input
-                      type="text"
-                      value={rg}
-                      onChange={(e) => setRg(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Data de Nascimento</label>
-                    <input
-                      type="date"
-                      value={dataNascimento}
-                      onChange={(e) => setDataNascimento(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Telefone de Contato</label>
-                    <input
-                      type="text"
-                      value={telefone}
-                      onChange={(e) => setTelefone(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">WhatsApp</label>
-                    <input
-                      type="text"
-                      value={whatsapp}
-                      onChange={(e) => setWhatsapp(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Endereço Residencial</label>
-                    <input
-                      type="text"
-                      value={endereco}
-                      onChange={(e) => setEndereco(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                    />
-                  </div>
-
-                  {/* File Attachment */}
-                  <div className="sm:col-span-2">
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide flex items-center justify-between">
-                      <span>Anexar Documentos CPF/RG/Residência</span>
-                      {anexoDocumento && <span className="text-emerald-600 font-bold text-[10px]">✓ Documento Carregado</span>}
-                    </label>
-                    <div className="border border-dashed border-slate-300 rounded-xl p-4 bg-slate-50 hover:bg-slate-100/60 transition flex flex-col items-center text-center">
-                      <FileText className="w-8 h-8 text-slate-400 mb-2" />
-                      <p className="text-xs text-slate-500 mb-2 font-medium">Selecione arquivos PDF ou fotos dos documentos pessoais.</p>
-                      <label className="px-3.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition cursor-pointer shadow-xs inline-block">
-                        <span>Procurar Documento</span>
-                        <input type="file" onChange={(e) => handleFileChange(e, "anexo")} className="hidden" />
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Observações do Cadastro</label>
-                    <textarea
-                      rows={2}
-                      value={observacoes}
-                      onChange={(e) => setObservacoes(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-2 p-4 bg-slate-50 border-t border-slate-100 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsModalOpen(false);
-                    stopCamera();
-                  }}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-blue-600/10 transition"
-                >
-                  {loading ? "Salvando..." : "Salvar Passageiro"}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
-      )}
+
+        {/* Webcam feed modal state */}
+        {useWebcam && (
+          <div className="p-4 bg-slate-900 rounded-xl border border-slate-800 space-y-3 flex flex-col items-center mb-4">
+            <video ref={videoRef} autoPlay className="rounded-lg border border-slate-700 w-[320px] h-[240px] bg-black" />
+            <div className="flex space-x-2">
+              <button
+                type="button"
+                onClick={capturePhoto}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 text-yellow-300" />
+                <span>Bater Foto</span>
+              </button>
+              <button
+                type="button"
+                onClick={stopCamera}
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-xs font-semibold cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Fields block */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-slate-100">
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Nome Completo *</label>
+            <input
+              type="text"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              required
+              autoFocus
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+            />
+          </div>
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">CPF *</label>
+            <input
+              type="text"
+              value={cpf}
+              onChange={(e) => setCpf(e.target.value)}
+              required
+              placeholder="000.000.000-00"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+            />
+          </div>
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">RG</label>
+            <input
+              type="text"
+              value={rg}
+              onChange={(e) => setRg(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+            />
+          </div>
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Data de Nascimento</label>
+            <input
+              type="date"
+              value={dataNascimento}
+              onChange={(e) => setDataNascimento(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+            />
+          </div>
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Telefone de Contato</label>
+            <input
+              type="text"
+              value={telefone}
+              onChange={(e) => setTelefone(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+            />
+          </div>
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">WhatsApp</label>
+            <input
+              type="text"
+              value={whatsapp}
+              onChange={(e) => setWhatsapp(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Endereço Residencial</label>
+            <input
+              type="text"
+              value={endereco}
+              onChange={(e) => setEndereco(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+            />
+          </div>
+
+          {/* File Attachment */}
+          <div className="sm:col-span-2">
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide flex items-center justify-between">
+              <span>Anexar Documentos CPF/RG/Residência</span>
+              {anexoDocumento && <span className="text-emerald-600 font-bold text-[10px]">✓ Documento Carregado</span>}
+            </label>
+            <div className="border border-dashed border-slate-300 rounded-xl p-4 bg-slate-50 hover:bg-slate-100/60 transition flex flex-col items-center text-center">
+              <FileText className="w-8 h-8 text-slate-400 mb-2" />
+              <p className="text-xs text-slate-500 mb-2 font-medium">Selecione arquivos PDF ou fotos dos documentos pessoais.</p>
+              <label className="px-3.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition cursor-pointer shadow-xs inline-block">
+                <span>Procurar Documento</span>
+                <input type="file" onChange={(e) => handleFileChange(e, "anexo")} className="hidden" />
+              </label>
+            </div>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Observações do Cadastro</label>
+            <textarea
+              rows={2}
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+            />
+          </div>
+        </div>
+      </ModalPortal>
     </div>
   );
 }

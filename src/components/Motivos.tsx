@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Motivo } from "../types";
 import { saveMotivo, deleteMotivo } from "../services/dbService";
 import { ClipboardList, Plus, Edit2, Trash2, ShieldAlert } from "lucide-react";
+import { ModalPortal } from "./ModalPortal";
 
 interface MotivosProps {
   motivos: Motivo[];
@@ -21,19 +22,7 @@ export default function Motivos({ motivos, userPerfil, userLogin, onRefresh }: M
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Auto-scroll and prevent background scroll when modal opens
-  React.useEffect(() => {
-    if (isModalOpen) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isModalOpen]);
+
 
   const openAddModal = () => {
     setEditingMot(null);
@@ -157,85 +146,76 @@ export default function Motivos({ motivos, userPerfil, userLogin, onRefresh }: M
         ))}
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-sm md:w-[80vw] md:max-w-[1200px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
-            <div className="bg-slate-900 p-5 text-white flex justify-between items-center shrink-0">
-              <h3 className="text-sm font-bold flex items-center space-x-2">
-                <ClipboardList className="w-5 h-5 text-amber-400" />
-                <span>{editingMot ? "Editar Motivo" : "Novo Motivo de Viagem"}</span>
-              </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white text-lg">&times;</button>
-            </div>
+      <ModalPortal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingMot ? "Editar Motivo" : "Novo Motivo de Viagem"}
+        icon={<ClipboardList className="w-5 h-5 text-amber-400" />}
+        onSubmit={handleSubmit}
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold transition cursor-pointer"
+            >
+              {loading ? "Salvando..." : "Salvar"}
+            </button>
+          </>
+        }
+      >
+        {error && (
+          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl flex items-center space-x-2 mb-4">
+            <ShieldAlert className="w-4 h-4" />
+            <span>{error}</span>
+          </div>
+        )}
 
-            <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden h-full">
-              <div className="p-6 overflow-y-auto space-y-4 flex-1">
-                {error && (
-                  <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl flex items-center space-x-2">
-                    <ShieldAlert className="w-4 h-4" />
-                    <span>{error}</span>
-                  </div>
-                )}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Nome do Motivo *</label>
+            <input
+              type="text"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              required
+              autoFocus
+              placeholder="Ex: Tratamento de Saúde (TFD)"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-amber-500 transition"
+            />
+          </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Nome do Motivo *</label>
-                    <input
-                      type="text"
-                      value={nome}
-                      onChange={(e) => setNome(e.target.value)}
-                      required
-                      autoFocus
-                      placeholder="Ex: Tratamento de Saúde (TFD)"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-amber-500 transition"
-                    />
-                  </div>
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Descrição / Justificativa</label>
+            <textarea
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              placeholder="Opcional. Adicione amparo legal ou regras..."
+              rows={2}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-amber-500 transition"
+            />
+          </div>
 
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Descrição / Justificativa</label>
-                    <textarea
-                      value={descricao}
-                      onChange={(e) => setDescricao(e.target.value)}
-                      placeholder="Opcional. Adicione amparo legal ou regras..."
-                      rows={2}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-amber-500 transition"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Status</label>
-                    <select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value as "Ativo" | "Inativo")}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-amber-500 transition"
-                    >
-                      <option value="Ativo">Ativo</option>
-                      <option value="Inativo">Inativo</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-2 p-4 bg-slate-50 border-t border-slate-100 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold transition"
-                >
-                  {loading ? "Salvando..." : "Salvar"}
-                </button>
-              </div>
-            </form>
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as "Ativo" | "Inativo")}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-amber-500 transition"
+            >
+              <option value="Ativo">Ativo</option>
+              <option value="Inativo">Inativo</option>
+            </select>
           </div>
         </div>
-      )}
+      </ModalPortal>
     </div>
   );
 }

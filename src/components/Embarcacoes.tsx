@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Embarcacao, Empresa, EmbarcacaoTipo } from "../types";
 import { saveEmbarcacao, deleteEmbarcacao } from "../services/dbService";
 import { Ship, Plus, Search, Edit2, Trash2, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { ModalPortal } from "./ModalPortal";
 
 interface EmbarcacoesProps {
   embarcacoes: Embarcacao[];
@@ -29,19 +30,7 @@ export default function Embarcacoes({ embarcacoes, empresas, userPerfil, userLog
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Auto-scroll and prevent background scroll when modal opens
-  React.useEffect(() => {
-    if (isModalOpen) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isModalOpen]);
+
 
   const getEmpresaName = (id: string) => {
     return empresas.find(e => e.id === id)?.nomeFantasia || "Empresa não cadastrada";
@@ -243,116 +232,101 @@ export default function Embarcacoes({ embarcacoes, empresas, userPerfil, userLog
         )}
       </div>
 
-       {/* Form Dialog Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md md:w-[80vw] md:max-w-[1200px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
-            <div className="bg-slate-900 p-5 text-white flex justify-between items-center shrink-0">
-              <h3 className="text-sm font-bold flex items-center space-x-2">
-                <Ship className="w-5 h-5 text-cyan-400" />
-                <span>{editingEmb ? "Editar Embarcação" : "Cadastrar Nova Embarcação"}</span>
-              </h3>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-white transition text-lg"
-              >
-                &times;
-              </button>
-            </div>
+      <ModalPortal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingEmb ? "Editar Embarcação" : "Cadastrar Nova Embarcação"}
+        icon={<Ship className="w-5 h-5 text-cyan-400" />}
+        onSubmit={handleSubmit}
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-cyan-600/10 transition cursor-pointer"
+            >
+              {loading ? "Salvando..." : "Salvar Embarcação"}
+            </button>
+          </>
+        }
+      >
+        {error && (
+          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl flex items-center space-x-2 mb-4">
+            <AlertCircle className="w-4 h-4" />
+            <span>{error}</span>
+          </div>
+        )}
 
-            <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden h-full">
-              <div className="p-6 overflow-y-auto space-y-4 flex-1">
-                {error && (
-                  <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl flex items-center space-x-2">
-                    <AlertCircle className="w-4 h-4" />
-                    <span>{error}</span>
-                  </div>
-                )}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Nome da Embarcação *</label>
+            <input
+              type="text"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              required
+              autoFocus
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-cyan-500 transition"
+            />
+          </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Nome da Embarcação *</label>
-                    <input
-                      type="text"
-                      value={nome}
-                      onChange={(e) => setNome(e.target.value)}
-                      required
-                      autoFocus
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-cyan-500 transition"
-                    />
-                  </div>
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Tipo de Embarcação *</label>
+            <select
+              value={tipo}
+              onChange={(e) => setTipo(e.target.value as EmbarcacaoTipo)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-cyan-500 transition"
+            >
+              <option value="Navio">Navio</option>
+              <option value="Balsa">Balsa</option>
+              <option value="Lancha">Lancha</option>
+              <option value="Ferry Boat">Ferry Boat</option>
+            </select>
+          </div>
 
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Tipo de Embarcação *</label>
-                    <select
-                      value={tipo}
-                      onChange={(e) => setTipo(e.target.value as EmbarcacaoTipo)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-cyan-500 transition"
-                    >
-                      <option value="Navio">Navio</option>
-                      <option value="Balsa">Balsa</option>
-                      <option value="Lancha">Lancha</option>
-                      <option value="Ferry Boat">Ferry Boat</option>
-                    </select>
-                  </div>
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Empresa Proprietária *</label>
+            <select
+              value={empresaId}
+              onChange={(e) => setEmpresaId(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-cyan-500 transition"
+            >
+              {empresas.map(emp => (
+                <option key={emp.id} value={emp.id}>{emp.nomeFantasia}</option>
+              ))}
+            </select>
+          </div>
 
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Empresa Proprietária *</label>
-                    <select
-                      value={empresaId}
-                      onChange={(e) => setEmpresaId(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-cyan-500 transition"
-                    >
-                      {empresas.map(emp => (
-                        <option key={emp.id} value={emp.id}>{emp.nomeFantasia}</option>
-                      ))}
-                    </select>
-                  </div>
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Capacidade Máxima de Passageiros</label>
+            <input
+              type="number"
+              value={capacidade}
+              onChange={(e) => setCapacidade(parseInt(e.target.value) || 0)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-cyan-500 transition"
+            />
+          </div>
 
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Capacidade Máxima de Passageiros</label>
-                    <input
-                      type="number"
-                      value={capacidade}
-                      onChange={(e) => setCapacidade(parseInt(e.target.value) || 0)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-cyan-500 transition"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Status</label>
-                    <select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value as "Ativo" | "Inativo")}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-cyan-500 transition"
-                    >
-                      <option value="Ativo">Ativo</option>
-                      <option value="Inativo">Inativo</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-2 p-4 bg-slate-50 border-t border-slate-100 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-cyan-600/10 transition"
-                >
-                  {loading ? "Salvando..." : "Salvar Embarcação"}
-                </button>
-              </div>
-            </form>
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as "Ativo" | "Inativo")}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-cyan-500 transition"
+            >
+              <option value="Ativo">Ativo</option>
+              <option value="Inativo">Inativo</option>
+            </select>
           </div>
         </div>
-      )}
+      </ModalPortal>
 
     </div>
   );

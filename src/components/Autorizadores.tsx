@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { Autorizador } from "../types";
 import { saveAutorizador, deleteAutorizador } from "../services/dbService";
 import { Award, Plus, Edit2, Trash2, ShieldAlert, PenTool, RotateCcw, Check } from "lucide-react";
+import { ModalPortal } from "./ModalPortal";
 
 interface AutorizadoresProps {
   autorizadores: Autorizador[];
@@ -23,19 +24,7 @@ export default function Autorizadores({ autorizadores, userPerfil, userLogin, on
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Auto-scroll and prevent background scroll when modal opens
-  React.useEffect(() => {
-    if (isModalOpen) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isModalOpen]);
+
 
   // Canvas Drawing references for digital signature pad
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -256,149 +245,140 @@ export default function Autorizadores({ autorizadores, userPerfil, userLogin, on
         ))}
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md md:w-[80vw] md:max-w-[1200px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
-            <div className="bg-slate-900 p-5 text-white flex justify-between items-center shrink-0">
-              <h3 className="text-sm font-bold flex items-center space-x-2">
-                <Award className="w-5 h-5 text-amber-400" />
-                <span>{editingAut ? "Editar Autorizador" : "Cadastrar Novo Autorizador"}</span>
-              </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white text-lg">&times;</button>
-            </div>
+      <ModalPortal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingAut ? "Editar Autorizador" : "Cadastrar Novo Autorizador"}
+        icon={<Award className="w-5 h-5 text-amber-400" />}
+        onSubmit={handleSubmit}
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold transition cursor-pointer"
+            >
+              {loading ? "Salvando..." : "Salvar Autorizador"}
+            </button>
+          </>
+        }
+      >
+        {error && (
+          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl flex items-center space-x-2 mb-4">
+            <ShieldAlert className="w-4 h-4" />
+            <span>{error}</span>
+          </div>
+        )}
 
-            <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden h-full">
-              <div className="p-6 overflow-y-auto space-y-4 flex-1">
-                {error && (
-                  <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl flex items-center space-x-2">
-                    <ShieldAlert className="w-4 h-4" />
-                    <span>{error}</span>
-                  </div>
-                )}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Nome Completo *</label>
+            <input
+              type="text"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              required
+              autoFocus
+              placeholder="Ex: Dr. Roberto Portel"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-amber-500 transition"
+            />
+          </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Nome Completo *</label>
-                    <input
-                      type="text"
-                      value={nome}
-                      onChange={(e) => setNome(e.target.value)}
-                      required
-                      autoFocus
-                      placeholder="Ex: Dr. Roberto Portel"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-amber-500 transition"
-                    />
-                  </div>
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Cargo Oficial *</label>
+            <input
+              type="text"
+              value={cargo}
+              onChange={(e) => setCargo(e.target.value)}
+              required
+              placeholder="Ex: Secretário Municipal"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-amber-500 transition"
+            />
+          </div>
 
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Cargo Oficial *</label>
-                    <input
-                      type="text"
-                      value={cargo}
-                      onChange={(e) => setCargo(e.target.value)}
-                      required
-                      placeholder="Ex: Secretário Municipal"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-amber-500 transition"
-                    />
-                  </div>
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Secretaria / Órgão *</label>
+            <input
+              type="text"
+              value={orgao}
+              onChange={(e) => setOrgao(e.target.value)}
+              required
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-amber-500 transition"
+            />
+          </div>
 
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Secretaria / Órgão *</label>
-                    <input
-                      type="text"
-                      value={orgao}
-                      onChange={(e) => setOrgao(e.target.value)}
-                      required
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-amber-500 transition"
-                    />
-                  </div>
-
-                  {/* Draw Canvas Block */}
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide flex items-center justify-between">
-                      <span>Rubrica / Assinatura Digital</span>
-                      <span className="text-[10px] text-slate-400 lowercase italic">Desenhe abaixo</span>
-                    </label>
-                    
-                    <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-                      <canvas
-                        ref={canvasRef}
-                        width={380}
-                        height={120}
-                        onMouseDown={startDrawing}
-                        onMouseMove={draw}
-                        onMouseUp={stopDrawing}
-                        onMouseLeave={stopDrawing}
-                        onTouchStart={startDrawing}
-                        onTouchMove={draw}
-                        onTouchEnd={stopDrawing}
-                        className="w-full h-24 cursor-crosshair bg-slate-50 block touch-none"
-                      />
-                      
-                      <div className="flex justify-between items-center bg-slate-100 px-3 py-2 border-t border-slate-200">
-                        <button
-                          type="button"
-                          onClick={clearCanvas}
-                          className="text-[10px] text-slate-500 hover:text-slate-700 flex items-center space-x-1 font-semibold"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          <span>Limpar Canvas</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={saveSignatureFromCanvas}
-                          className="text-[10px] text-blue-600 hover:text-blue-800 flex items-center space-x-1 font-bold"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Gravar Assinatura</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {assinaturaDigital && (
-                      <div className="mt-2 text-center">
-                        <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1 inline-block">
-                          ✓ Assinatura gravada com sucesso!
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Status</label>
-                    <select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value as "Ativo" | "Inativo")}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-amber-500 transition"
-                    >
-                      <option value="Ativo">Ativo</option>
-                      <option value="Inativo">Inativo</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-2 p-4 bg-slate-50 border-t border-slate-100 shrink-0">
+          {/* Draw Canvas Block */}
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide flex items-center justify-between">
+              <span>Rubrica / Assinatura Digital</span>
+              <span className="text-[10px] text-slate-400 lowercase italic">Desenhe abaixo</span>
+            </label>
+            
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+              <canvas
+                ref={canvasRef}
+                width={380}
+                height={120}
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+                onTouchStart={startDrawing}
+                onTouchMove={draw}
+                onTouchEnd={stopDrawing}
+                className="w-full h-24 cursor-crosshair bg-slate-50 block touch-none"
+              />
+              
+              <div className="flex justify-between items-center bg-slate-100 px-3 py-2 border-t border-slate-200">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition"
+                  onClick={clearCanvas}
+                  className="text-[10px] text-slate-500 hover:text-slate-700 flex items-center space-x-1 font-semibold cursor-pointer"
                 >
-                  Cancelar
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Limpar Canvas</span>
                 </button>
+
                 <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold transition"
+                  type="button"
+                  onClick={saveSignatureFromCanvas}
+                  className="text-[10px] text-blue-600 hover:text-blue-800 flex items-center space-x-1 font-bold cursor-pointer"
                 >
-                  {loading ? "Salvando..." : "Salvar Autorizador"}
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Gravar Assinatura</span>
                 </button>
               </div>
-            </form>
+            </div>
+
+            {assinaturaDigital && (
+              <div className="mt-2 text-center">
+                <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1 inline-block">
+                  ✓ Assinatura gravada com sucesso!
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as "Ativo" | "Inativo")}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-amber-500 transition"
+            >
+              <option value="Ativo">Ativo</option>
+              <option value="Inativo">Inativo</option>
+            </select>
           </div>
         </div>
-      )}
+      </ModalPortal>
     </div>
   );
 }
