@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Passagem, Passageiro, Empresa, AuditLog } from "../types";
+import { Passagem, Passageiro, Empresa, AuditLog, Embarcacao, Acomodacao, Motivo, Autorizador } from "../types";
 import { getLogs } from "../services/dbService";
 import { 
   BarChart4, 
@@ -23,6 +23,10 @@ interface RelatoriosProps {
   passagens: Passagem[];
   passageiros: Passageiro[];
   empresas: Empresa[];
+  embarcacoes: Embarcacao[];
+  acomodacoes: Acomodacao[];
+  motivos: Motivo[];
+  autorizadores: Autorizador[];
   userPerfil: string;
   onRefresh: () => void;
 }
@@ -31,6 +35,10 @@ export default function RelatoriosFinanceiro({
   passagens,
   passageiros,
   empresas,
+  embarcacoes,
+  acomodacoes,
+  motivos,
+  autorizadores,
   userPerfil,
   onRefresh
 }: RelatoriosProps) {
@@ -50,9 +58,33 @@ export default function RelatoriosFinanceiro({
 
   // Printing voucher modal state
   const [printingTicket, setPrintingTicket] = useState<Passagem | null>(null);
+  const [isPrintingConsolidated, setIsPrintingConsolidated] = useState(false);
 
   const getPassageiro = (id: string) => passageiros.find(p => p.id === id);
   const getEmpresa = (id: string) => empresas.find(e => e.id === id);
+  const getEmbarcacao = (id: string) => embarcacoes.find(e => e.id === id);
+  const getAcomodacao = (id: string) => acomodacoes.find(a => a.id === id);
+  const getMotivo = (id: string) => motivos.find(m => m.id === id);
+
+  const getOrigemEDestino = (destinoStr: string) => {
+    if (!destinoStr) return { origem: "Portel", destino: "" };
+    if (destinoStr.includes(" / ")) {
+      const parts = destinoStr.split(" / ");
+      return { origem: parts[0], destino: parts[1] };
+    } else if (destinoStr.includes("/")) {
+      const parts = destinoStr.split("/");
+      return { origem: parts[0].trim(), destino: parts[1].trim() };
+    }
+    return { origem: "Portel", destino: destinoStr };
+  };
+
+  const handlePrintConsolidated = () => {
+    setPrintingTicket(null);
+    setIsPrintingConsolidated(true);
+    setTimeout(() => {
+      window.print();
+    }, 300);
+  };
 
   const fetchAuditLogs = async () => {
     setLogsLoading(true);
@@ -280,15 +312,24 @@ export default function RelatoriosFinanceiro({
 
           {/* Matched Tickets List with Print Option */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-50/50">
               <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Listagem Consolidada</h3>
-              <button
-                onClick={exportRelatorioCSV}
-                className="px-3.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Exportar Planilha</span>
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={handlePrintConsolidated}
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition cursor-pointer shadow-xs"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Imprimir Relatório</span>
+                </button>
+                <button
+                  onClick={exportRelatorioCSV}
+                  className="px-3.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Exportar Planilha</span>
+                </button>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -514,6 +555,163 @@ export default function RelatoriosFinanceiro({
             
             <div className="text-[8px] font-mono text-slate-500 uppercase tracking-widest text-center">
               SEGAF-PORTEL-CODE- {printingTicket.id.toUpperCase()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONSOLIDATED GENERAL REPORT PRINT TEMPLATE - VISIBLE ONLY DURING PRINTING & PREVIEW */}
+      {isPrintingConsolidated && (
+        <div className="print-only fixed inset-0 z-100 bg-white p-6 md:p-8 overflow-y-auto flex flex-col justify-between text-slate-900" id="print-area-consolidated">
+          {/* Controls bar (visible on screen, hidden when printing) */}
+          <div className="no-print flex justify-between items-center mb-6 border-b border-slate-200 pb-4 bg-slate-50 p-4 rounded-xl">
+            <div className="space-y-0.5 text-left">
+              <h4 className="font-bold text-sm text-slate-800">Visualização de Impressão do Relatório</h4>
+              <p className="text-xs text-slate-500">Este painel ocupa a tela apenas para visualização e não será impresso.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => window.print()}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Imprimir Agora</span>
+              </button>
+              <button
+                onClick={() => setIsPrintingConsolidated(false)}
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-xl cursor-pointer transition"
+              >
+                Fechar Visualização
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 space-y-6 text-left">
+            {/* Header */}
+            <div className="border-b-4 border-double border-slate-900 pb-4 text-center relative">
+              <h1 className="text-xl font-bold uppercase tracking-wider text-slate-900">Prefeitura Municipal de Portel</h1>
+              <h2 className="text-sm font-semibold uppercase text-slate-700">SEGAF – Secretaria de Gestão Administrativa e Financeira</h2>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mt-2">Relatório Consolidado de Viagens Programadas</h3>
+            </div>
+
+            {/* Metadata and Filters Info */}
+            <div className="grid grid-cols-2 gap-4 text-xs p-4 bg-slate-50 border border-slate-200 rounded-xl">
+              <div className="space-y-1 text-left">
+                <p><strong>Data/Hora de Emissão:</strong> {new Date().toLocaleString("pt-BR")}</p>
+                <p><strong>Período do Relatório:</strong> {startDate ? new Date(startDate + "T12:00:00").toLocaleDateString("pt-BR") : "Início"} a {endDate ? new Date(endDate + "T12:00:00").toLocaleDateString("pt-BR") : "Hoje"}</p>
+              </div>
+              <div className="space-y-1 text-right">
+                <p><strong>Empresa de Navegação:</strong> {companyFilter === "Todos" ? "Todas as Empresas" : getEmpresa(companyFilter)?.nomeFantasia}</p>
+                <p><strong>Status Selecionado:</strong> {statusFilter === "Todos" ? "Todos os Status" : statusFilter}</p>
+              </div>
+            </div>
+
+            {/* List Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-[10px] text-left border-collapse border border-slate-300">
+                <thead>
+                  <tr className="bg-slate-100 border-b border-slate-300 text-slate-700 font-bold uppercase text-[9px]">
+                    <th className="border border-slate-300 p-2 text-center">Ref</th>
+                    <th className="border border-slate-300 p-2">Passageiro (CPF)</th>
+                    <th className="border border-slate-300 p-2">Rota (Origem / Destino)</th>
+                    <th className="border border-slate-300 p-2">Empresa / Embarcação</th>
+                    <th className="border border-slate-300 p-2">Tipo / Acomodação</th>
+                    <th className="border border-slate-300 p-2">Motivo</th>
+                    <th className="border border-slate-300 p-2 text-right">Valor Passagem</th>
+                    <th className="border border-slate-300 p-2 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredReportTickets.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="border border-slate-300 p-4 text-center text-slate-400">Nenhum registro encontrado para os filtros selecionados.</td>
+                    </tr>
+                  ) : (
+                    filteredReportTickets.map(p => {
+                      const pass = getPassageiro(p.passageiroId);
+                      const emp = getEmpresa(p.empresaId);
+                      const emb = getEmbarcacao(p.embarcacaoId);
+                      const aco = getAcomodacao(p.acomodacaoId);
+                      const mot = getMotivo(p.motivoId);
+                      const routeInfo = getOrigemEDestino(p.destino);
+
+                      return (
+                        <tr key={p.id} className="hover:bg-slate-50/50">
+                          <td className="border border-slate-300 p-2 text-center font-mono font-bold text-slate-500">
+                            {p.id.substring(0, 8).toUpperCase()}
+                          </td>
+                          <td className="border border-slate-300 p-2">
+                            <span className="block font-bold text-slate-900">{pass?.nome || "Não encontrado"}</span>
+                            <span className="block font-mono text-[9px] text-slate-500">CPF: {pass?.cpf || "N/C"}</span>
+                          </td>
+                          <td className="border border-slate-300 p-2">
+                            <span className="block"><strong>Origem:</strong> {routeInfo.origem}</span>
+                            <span className="block"><strong>Destino:</strong> {routeInfo.destino}</span>
+                          </td>
+                          <td className="border border-slate-300 p-2">
+                            <span className="block font-semibold">{emp?.nomeFantasia || "Desconhecida"}</span>
+                            <span className="block text-[9px] text-slate-500">Embarcação: {emb?.nome || "Não cadastrada"}</span>
+                          </td>
+                          <td className="border border-slate-300 p-2">
+                            <span className="block"><strong>Tipo:</strong> {p.tipoViagem}</span>
+                            <span className="block"><strong>Acomodação:</strong> {aco?.nome || "Livre"}</span>
+                          </td>
+                          <td className="border border-slate-300 p-2">
+                            <span className="block truncate max-w-[120px]" title={mot?.nome}>{mot?.nome || "Outros"}</span>
+                            {p.observacoes && (
+                              <span className="block text-[8px] text-slate-500 italic truncate max-w-[120px]" title={p.observacoes}>
+                                Obs: {p.observacoes}
+                              </span>
+                            )}
+                          </td>
+                          <td className="border border-slate-300 p-2 text-right font-bold text-slate-900">
+                            R$ {p.valorFinal.toFixed(2)}
+                          </td>
+                          <td className="border border-slate-300 p-2 text-center">
+                            <span className="font-semibold text-[9px] uppercase">{p.status}</span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Summary Statistics Footer */}
+            <div className="grid grid-cols-3 gap-4 border border-slate-300 rounded-xl p-4 bg-slate-50 text-xs">
+              <div className="text-center border-r border-slate-200">
+                <span className="text-[9px] uppercase font-bold text-slate-400 block">Total de Passageiros</span>
+                <span className="text-sm font-bold text-slate-800">
+                  {new Set(filteredReportTickets.map(p => p.passageiroId)).size} passageiros
+                </span>
+              </div>
+              <div className="text-center border-r border-slate-200">
+                <span className="text-[9px] uppercase font-bold text-slate-400 block">Total de Viagens</span>
+                <span className="text-sm font-bold text-slate-800">
+                  {filteredReportTickets.length} passagens
+                </span>
+              </div>
+              <div className="text-center">
+                <span className="text-[9px] uppercase font-bold text-slate-400 block">Valor Total das Passagens</span>
+                <span className="text-sm font-bold text-emerald-700">
+                  R$ {totalValue.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Signature lines */}
+          <div className="grid grid-cols-2 gap-8 pt-12 pb-6">
+            <div className="flex flex-col items-center justify-end text-center space-y-1">
+              <div className="w-full max-w-[240px] border-b border-slate-400 h-8" />
+              <span className="text-[9px] font-bold text-slate-800 uppercase tracking-wide">Representante - Empresa de Navegação</span>
+              <span className="text-[8px] text-slate-400 uppercase">Assinatura e Carimbo</span>
+            </div>
+            <div className="flex flex-col items-center justify-end text-center space-y-1">
+              <div className="w-full max-w-[240px] border-b border-slate-400 h-8" />
+              <span className="text-[9px] font-bold text-slate-800 uppercase tracking-wide">SEGAF – Prefeitura de Portel</span>
+              <span className="text-[8px] text-slate-400 uppercase">Assinatura e Carimbo do Gestor</span>
             </div>
           </div>
         </div>

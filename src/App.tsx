@@ -28,10 +28,11 @@ import EmissaoPassagens from "./components/EmissaoPassagens";
 import RelatoriosFinanceiro from "./components/RelatoriosFinanceiro";
 import GeminiAssistant from "./components/GeminiAssistant";
 import Usuarios from "./components/Usuarios";
+import Configuracoes from "./components/Configuracoes";
 
 // Icons
 import { 
-  Anchor, 
+  Anchor,
   LayoutDashboard, 
   FileText, 
   Users, 
@@ -45,11 +46,14 @@ import {
   User as UserIcon,
   Menu,
   X,
-  UserCog
+  UserCog,
+  Settings
 } from "lucide-react";
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string>("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -84,8 +88,8 @@ export default function App() {
   // Listen to Firebase Auth state change for login persistence & session control
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
+      try {
+        if (firebaseUser) {
           const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data() as User;
@@ -99,18 +103,21 @@ export default function App() {
             } else {
               // Gated / First access password change required or user is inactive
               setCurrentUser(null);
+              await signOut(auth);
             }
           } else {
             setCurrentUser(null);
+            await signOut(auth);
           }
-        } catch (err) {
-          console.error("Erro ao carregar perfil do usuário:", err);
+        } else {
           setCurrentUser(null);
         }
-      } else {
+      } catch (err) {
+        console.error("Erro ao carregar perfil do usuário:", err);
         setCurrentUser(null);
+      } finally {
+        setAuthLoading(false);
       }
-      setDbLoading(false);
     });
 
     return () => unsubscribe();
@@ -151,6 +158,7 @@ export default function App() {
       setPassageiros(listPassageiros);
       setAutorizadores(listAutorizadores);
       setPassagens(listPassagens);
+      setInitialDataLoaded(true);
     } catch (err) {
       console.error("Erro ao carregar dados do Firestore:", err);
     } finally {
@@ -173,6 +181,7 @@ export default function App() {
     }
     await signOut(auth);
     setCurrentUser(null);
+    setInitialDataLoaded(false);
   };
 
   const handleNavigateToTicketsFromDashboard = () => {
@@ -183,6 +192,30 @@ export default function App() {
     setExternalEditingTicket(ticket);
     setActiveMenu("passagens");
   };
+
+  if (authLoading) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-900 text-white space-y-4">
+        <div className="w-12 h-12 rounded-full border-4 border-blue-500 border-t-transparent animate-spin" />
+        <div className="text-center space-y-1">
+          <h2 className="text-xl font-bold tracking-wider uppercase">SEGAF</h2>
+          <p className="text-xs text-slate-400 font-semibold">Verificando autenticação de segurança...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentUser && !initialDataLoaded) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-900 text-white space-y-4">
+        <div className="w-12 h-12 rounded-full border-4 border-blue-500 border-t-transparent animate-spin" />
+        <div className="text-center space-y-1">
+          <h2 className="text-xl font-bold tracking-wider uppercase">SEGAF - Portel</h2>
+          <p className="text-xs text-slate-400 font-semibold">Sincronizando dados operacionais...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentUser) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
@@ -200,6 +233,9 @@ export default function App() {
     { id: "autorizadores", label: "Autorizadores", icon: Award },
     { id: "relatorios", label: "Prestação de Contas", icon: BarChart3 },
     { id: "usuarios", label: "Usuários & Segurança", icon: UserCog },
+    ...(currentUser && currentUser.perfil === "Administrador" ? [
+      { id: "configuracoes", label: "Configurações", icon: Settings }
+    ] : [])
   ];
 
   const getHeaderTitle = () => {
@@ -214,6 +250,7 @@ export default function App() {
       case "autorizadores": return "Autorizadores Deferentes";
       case "relatorios": return "Relatórios & Prestação de Contas";
       case "usuarios": return "Usuários & Segurança";
+      case "configuracoes": return "Configurações do Sistema";
       default: return "SEGAF";
     }
   };
@@ -471,6 +508,10 @@ export default function App() {
                   passagens={passagens}
                   passageiros={passageiros}
                   empresas={empresas}
+                  embarcacoes={embarcacoes}
+                  acomodacoes={acomodacoes}
+                  motivos={motivos}
+                  autorizadores={autorizadores}
                   userPerfil={currentUser.perfil}
                   onRefresh={loadAllData}
                 />
@@ -479,6 +520,12 @@ export default function App() {
                 <Usuarios 
                   currentUser={currentUser}
                   onRefresh={loadAllData}
+                />
+              )}
+              {activeMenu === "configuracoes" && (
+                <Configuracoes 
+                  currentUser={currentUser}
+                  onDataCleared={loadAllData}
                 />
               )}
             </div>

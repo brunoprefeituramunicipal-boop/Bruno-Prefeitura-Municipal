@@ -11,7 +11,6 @@ import {
 import { 
   TrendingUp, 
   DollarSign, 
-  Anchor, 
   Users, 
   Calendar, 
   Clock, 
@@ -72,11 +71,31 @@ export default function Dashboard({
   };
 
   // Date Parsing helper
-  const hojeStr = new Date().toISOString().split("T")[0];
+  const getLocalHojeStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const hojeStr = getLocalHojeStr();
   
-  const amanhaObj = new Date();
-  amanhaObj.setDate(amanhaObj.getDate() + 1);
-  const amanhaStr = amanhaObj.toISOString().split("T")[0];
+  const getLocalAmanhaStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const amanhaStr = getLocalAmanhaStr();
+
+  const parseDateToUTC = (str: string) => {
+    const [y, m, d] = str.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d));
+  };
 
   const atualMonth = new Date().getMonth(); // 0-11
   const atualYear = new Date().getFullYear();
@@ -92,7 +111,7 @@ export default function Dashboard({
   
   const viagensProgramadas = passagens.filter(p => 
     ["Solicitada", "Aprovada", "Emitida", "Confirmada"].includes(p.status) && 
-    new Date(p.dataViagem).getTime() >= new Date(hojeStr).getTime()
+    parseDateToUTC(p.dataViagem).getTime() >= parseDateToUTC(hojeStr).getTime()
   ).length;
 
   const viagensHoje = passagens.filter(p => p.dataViagem === hojeStr).length;
@@ -103,12 +122,14 @@ export default function Dashboard({
 
   // Countdown Helper with Colors
   const getAlertCountdown = (dataViagemStr: string) => {
-    const hoje = new Date(hojeStr);
-    const viagem = new Date(dataViagemStr);
+    const hoje = parseDateToUTC(hojeStr);
+    const viagem = parseDateToUTC(dataViagemStr);
     const diffTime = viagem.getTime() - hoje.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) {
+    if (diffDays < 0) {
+      return { days: diffDays, text: "Viagem realizada", color: "slate", bg: "bg-slate-500/10 border-slate-500/30 text-slate-400" };
+    } else if (diffDays === 0) {
       return { days: 0, text: "Hoje", color: "rose", bg: "bg-rose-500/10 border-rose-500/30 text-rose-400" };
     } else if (diffDays === 1) {
       return { days: 1, text: "Amanhã (1 dia)", color: "orange", bg: "bg-orange-500/10 border-orange-500/30 text-orange-400" };
@@ -129,8 +150,21 @@ export default function Dashboard({
   const alertTickets = passagens
     .filter(p => ["Solicitada", "Aprovada", "Emitida", "Confirmada"].includes(p.status))
     .map(p => ({ ticket: p, countdown: getAlertCountdown(p.dataViagem) }))
-    .filter(item => item.countdown.days >= 0 && item.countdown.days <= 30)
-    .sort((a, b) => a.countdown.days - b.countdown.days);
+    .filter(item => item.countdown.days <= 30)
+    .sort((a, b) => {
+      const aDays = a.countdown.days;
+      const bDays = b.countdown.days;
+      if (aDays >= 0 && bDays >= 0) {
+        return aDays - bDays;
+      }
+      if (aDays >= 0 && bDays < 0) {
+        return -1;
+      }
+      if (aDays < 0 && bDays >= 0) {
+        return 1;
+      }
+      return bDays - aDays;
+    });
 
   // WhatsApp reminder generator
   const sendWhatsAppReminder = (ticket: Passagem) => {

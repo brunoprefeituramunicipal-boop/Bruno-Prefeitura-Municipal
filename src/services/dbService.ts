@@ -12,7 +12,8 @@ import {
   orderBy, 
   limit, 
   DocumentData,
-  onSnapshot
+  onSnapshot,
+  writeBatch
 } from "firebase/firestore";
 import { db, auth, handleFirestoreError, OperationType } from "../firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
@@ -638,5 +639,48 @@ export async function seedDatabaseIfEmpty(): Promise<void> {
     }
   } catch (err) {
     console.error("Erro ao executar seedDatabaseIfEmpty:", err);
+  }
+}
+
+export async function clearAllSystemData(): Promise<void> {
+  const collectionsToClear = [
+    "passagens",
+    "passageiros",
+    "empresas",
+    "embarcacoes",
+    "acomodacoes",
+    "motivos",
+    "autorizadores",
+    "logs"
+  ];
+
+  for (const collName of collectionsToClear) {
+    try {
+      const snap = await getDocs(collection(db, collName));
+      const chunks: any[] = [];
+      let currentChunk: any[] = [];
+      
+      snap.docs.forEach((docSnap) => {
+        currentChunk.push(docSnap.ref);
+        if (currentChunk.length === 500) {
+          chunks.push(currentChunk);
+          currentChunk = [];
+        }
+      });
+      if (currentChunk.length > 0) {
+        chunks.push(currentChunk);
+      }
+
+      for (const chunk of chunks) {
+        const batch = writeBatch(db);
+        chunk.forEach((ref) => {
+          batch.delete(ref);
+        });
+        await batch.commit();
+      }
+      console.log(`Collection ${collName} cleared successfully.`);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, collName);
+    }
   }
 }
