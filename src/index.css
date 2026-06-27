@@ -30,6 +30,17 @@ body {
     visibility: visible !important;
   }
 
+  /* BUT strictly hide any no-print elements, even if they are inside print containers */
+  .no-print,
+  .no-print *,
+  [id="print-area"] .no-print,
+  [id="print-area"] .no-print *,
+  [id="print-area-consolidated"] .no-print,
+  [id="print-area-consolidated"] .no-print * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
   /* Force the printed area to render as a natural block at the very top of the page */
   .print-only, 
   [id="print-area"], 

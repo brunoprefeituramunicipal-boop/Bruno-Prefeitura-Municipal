@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { formatarDataParaExibicao, obterDataAtualBelem, obterAmanhaBelem } from "../utils/dateUtils";
 import { 
   Passagem, 
   Passageiro, 
@@ -70,48 +71,35 @@ export default function Dashboard({
     return embarcacoes.find(v => v.id === id)?.nome || "Não identificada";
   };
 
-  // Date Parsing helper
-  const getLocalHojeStr = () => {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const hojeStr = getLocalHojeStr();
-  
-  const getLocalAmanhaStr = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const amanhaStr = getLocalAmanhaStr();
+  // Centralized timezone safe date variables
+  const hojeStr = obterDataAtualBelem();
+  const amanhaStr = obterAmanhaBelem();
 
   const parseDateToUTC = (str: string) => {
     const [y, m, d] = str.split("-").map(Number);
     return new Date(Date.UTC(y, m - 1, d));
   };
 
-  const atualMonth = new Date().getMonth(); // 0-11
-  const atualYear = new Date().getFullYear();
+  const partsToday = hojeStr.split("-").map(Number);
+  const atualMonth = partsToday[1] - 1; // 0-11
+  const atualYear = partsToday[0];
 
   // Metrics calculation
   const totalPassagens = passagens.length;
   const passagensMes = passagens.filter(p => {
-    const d = new Date(p.dataViagem);
-    return d.getMonth() === atualMonth && d.getFullYear() === atualYear;
+    const parts = p.dataViagem.split("-");
+    if (parts.length === 3) {
+      const [year, month] = parts.map(Number);
+      return (month - 1) === atualMonth && year === atualYear;
+    }
+    return false;
   }).length;
 
   const valorTotal = passagens.reduce((acc, p) => acc + p.valorFinal, 0);
   
   const viagensProgramadas = passagens.filter(p => 
     ["Solicitada", "Aprovada", "Emitida", "Confirmada"].includes(p.status) && 
-    parseDateToUTC(p.dataViagem).getTime() >= parseDateToUTC(hojeStr).getTime()
+    p.dataViagem >= hojeStr
   ).length;
 
   const viagensHoje = passagens.filter(p => p.dataViagem === hojeStr).length;
@@ -186,7 +174,7 @@ export default function Dashboard({
       rawPhone = "5591" + rawPhone; // Default area code of Portel is 91
     }
 
-    const dataFormatted = new Date(ticket.dataViagem).toLocaleDateString("pt-BR");
+    const dataFormatted = formatarDataParaExibicao(ticket.dataViagem);
     const embarcacaoName = getEmbarcacaoName(ticket.embarcacaoId);
 
     const messageText = `Olá, ${passenger.nome}.
@@ -218,8 +206,12 @@ Prefeitura Municipal de Portel.`;
       const y = d.getFullYear();
       
       const filtered = passagens.filter(p => {
-        const pd = new Date(p.dataViagem);
-        return pd.getMonth() === m && pd.getFullYear() === y;
+        const parts = p.dataViagem.split("-");
+        if (parts.length === 3) {
+          const [year, month] = parts.map(Number);
+          return (month - 1) === m && year === y;
+        }
+        return false;
       });
 
       const count = filtered.length;
@@ -521,7 +513,7 @@ Prefeitura Municipal de Portel.`;
                   </div>
 
                   <div className="flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-100/80 pt-2">
-                    <span>{new Date(ticket.dataViagem).toLocaleDateString("pt-BR")}</span>
+                    <span>{formatarDataParaExibicao(ticket.dataViagem)}</span>
                     <span className="flex items-center text-blue-500 hover:underline">
                       Ver Detalhes <ChevronRight className="w-3 h-3 ml-0.5" />
                     </span>
@@ -576,7 +568,7 @@ Prefeitura Municipal de Portel.`;
                 <div className="flex justify-between">
                   <span className="text-xs text-slate-400">Data de Saída:</span>
                   <span className="text-xs font-bold text-slate-800">
-                    {new Date(selectedAlertTicket.dataViagem).toLocaleDateString("pt-BR")}
+                    {formatarDataParaExibicao(selectedAlertTicket.dataViagem)}
                   </span>
                 </div>
                 <div className="flex justify-between">

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { formatarDataParaExibicao } from "../utils/dateUtils";
 import { Passageiro, Passagem } from "../types";
 import { savePassageiro, deletePassageiro } from "../services/dbService";
 import { 
@@ -381,7 +382,7 @@ export default function Passageiros({ passageiros, passagens, userPerfil, userLo
                           {ticket.status}
                         </span>
                       </div>
-                      <p className="text-slate-500">Destino: <strong className="text-slate-700">{ticket.destino}</strong> | Saída: <strong>{new Date(ticket.dataViagem).toLocaleDateString("pt-BR")}</strong></p>
+                      <p className="text-slate-500">Destino: <strong className="text-slate-700">{ticket.destino}</strong> | Saída: <strong>{formatarDataParaExibicao(ticket.dataViagem)}</strong></p>
                       <p className="text-[10px] text-slate-400">Tipo: {ticket.tipoViagem} | Acomodação: {ticket.id}</p>
                     </div>
 

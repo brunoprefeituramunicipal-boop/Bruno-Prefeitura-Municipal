@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { obterDataAtualBelem, formatarDataParaExibicao } from "../utils/dateUtils";
 import { 
   Passagem, 
   Passageiro, 
@@ -139,13 +140,17 @@ export default function EmissaoPassagens({
       return;
     }
 
+    const defaultEmpresaId = empresas[0]?.id || "";
+    const firstCompanyVessels = embarcacoes.filter(v => v.empresaId === defaultEmpresaId && v.status === "Ativo");
+
     setSelectedTicket(null);
     setPassageiroId(passageiros[0]?.id || "");
-    setEmpresaId(empresas[0]?.id || "");
+    setEmpresaId(defaultEmpresaId);
+    setEmbarcacaoId(firstCompanyVessels[0]?.id || "");
     setAcomodacaoId(acomodacoes[0]?.id || "");
     setMotivoId(motivos[0]?.id || "");
     setAutorizadorId(autorizadores[0]?.id || "");
-    setDataViagem(new Date().toISOString().split("T")[0]);
+    setDataViagem(obterDataAtualBelem());
     setTipoViagem("Ida");
     setDestino("Portel / Belém");
     setValorOriginal(150);
@@ -352,7 +357,7 @@ export default function EmissaoPassagens({
                     </div>
                     <div className="flex justify-between">
                       <span>Data de Saída:</span>
-                      <span className="font-semibold text-slate-700">{new Date(t.dataViagem).toLocaleDateString("pt-BR")}</span>
+                      <span className="font-semibold text-slate-700">{formatarDataParaExibicao(t.dataViagem)}</span>
                     </div>
                     <div className="flex justify-between items-center border-t border-slate-50 pt-2 font-bold text-slate-800">
                       <span>Preço Final:</span>
@@ -389,9 +394,9 @@ export default function EmissaoPassagens({
 
       {/* Issuance Modal Form */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all my-8">
-            <div className="bg-slate-900 p-5 text-white flex justify-between items-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
+            <div className="bg-slate-900 p-5 text-white flex justify-between items-center shrink-0">
               <h3 className="text-sm font-bold flex items-center space-x-2">
                 <Ship className="w-5 h-5 text-blue-400" />
                 <span>{selectedTicket ? "Auditar & Emitir Passagem" : "Nova Solicitação de Passagem"}</span>
@@ -399,215 +404,217 @@ export default function EmissaoPassagens({
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white text-lg">&times;</button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {error && (
-                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl flex items-center space-x-2">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>{error}</span>
-                </div>
-              )}
+            <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden h-full">
+              <div className="p-6 overflow-y-auto space-y-4 flex-1">
+                {error && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>{error}</span>
+                  </div>
+                )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                
-                {/* Passenger Selector */}
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Passageiro Beneficiário *</label>
-                  <select
-                    value={passageiroId}
-                    onChange={(e) => setPassageiroId(e.target.value)}
-                    required
-                    autoFocus
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  >
-                    {passageiros.map(p => (
-                      <option key={p.id} value={p.id}>{p.nome} (CPF: {p.cpf})</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Company Selector */}
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Linha / Empresa de Navegação *</label>
-                  <select
-                    value={empresaId}
-                    onChange={(e) => setEmpresaId(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  >
-                    {empresas.map(e => (
-                      <option key={e.id} value={e.id}>{e.nomeFantasia}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Vessel Selector (Filtered dynamically) */}
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Embarcação Credenciada *</label>
-                  <select
-                    value={embarcacaoId}
-                    onChange={(e) => setEmbarcacaoId(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  >
-                    {filteredVessels.length === 0 ? (
-                      <option value="">Nenhuma embarcação cadastrada para esta empresa</option>
-                    ) : (
-                      filteredVessels.map(v => (
-                        <option key={v.id} value={v.id}>{v.nome} ({v.tipo})</option>
-                      ))
-                    )}
-                  </select>
-                </div>
-
-                {/* Accommodation Selector */}
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Tipo de Acomodação *</label>
-                  <select
-                    value={acomodacaoId}
-                    onChange={(e) => setAcomodacaoId(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  >
-                    {acomodacoes.map(a => (
-                      <option key={a.id} value={a.id}>{a.nome}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Date Picker */}
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Data Programada da Viagem *</label>
-                  <input
-                    type="date"
-                    value={dataViagem}
-                    onChange={(e) => setDataViagem(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  />
-                </div>
-
-                {/* Trip type */}
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Modalidade da Viagem *</label>
-                  <select
-                    value={tipoViagem}
-                    onChange={(e) => setTipoViagem(e.target.value as any)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  >
-                    <option value="Ida">Somente Ida</option>
-                    <option value="Volta">Somente Volta</option>
-                    <option value="Ida e Volta">Ida e Volta</option>
-                  </select>
-                </div>
-
-                {/* Rota Destino presets or typed */}
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Rota de Viagem / Destino *</label>
-                  <select
-                    value={destino}
-                    onChange={(e) => setDestino(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  >
-                    {destinosPresets.map(d => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Travel Motive Reason */}
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Motivo da Concessão *</label>
-                  <select
-                    value={motivoId}
-                    onChange={(e) => setMotivoId(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  >
-                    {motivos.map(m => (
-                      <option key={m.id} value={m.id}>{m.nome}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Authorizer Signee */}
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Autorizador / Deferente *</label>
-                  <select
-                    value={autorizadorId}
-                    onChange={(e) => setAutorizadorId(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  >
-                    {autorizadores.map(a => (
-                      <option key={a.id} value={a.id}>{a.nome} ({a.cargo})</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Status selection */}
-                <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Status da Passagem</label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as PassagemStatus)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  >
-                    <option value="Solicitada">Solicitada (Rascunho)</option>
-                    <option value="Aprovada">Aprovada (Defera)</option>
-                    <option value="Emitida">Emitida (Liberada)</option>
-                    {/* Operator CANNOT cancel unless Admin! Let's restrict cancel option in list */}
-                    {userPerfil === "Administrador" && <option value="Cancelada">Cancelada</option>}
-                  </select>
-                </div>
-
-                {/* Financial values card */}
-                <div className="sm:col-span-2 p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3.5">
-                  <h4 className="text-xs font-bold text-slate-700 flex items-center uppercase tracking-wider">
-                    <DollarSign className="w-4 h-4 text-emerald-600 mr-1.5" /> Planilha de Custo e Tarifas
-                  </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   
-                  <div className="grid grid-cols-3 gap-3 text-xs">
-                    <div>
-                      <label className="block text-slate-500 mb-1 font-semibold">Valor Bruto (R$)</label>
-                      <input
-                        type="number"
-                        value={valorOriginal}
-                        onChange={(e) => setValorOriginal(Math.max(parseFloat(e.target.value) || 0, 0))}
-                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-800 font-semibold"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-500 mb-1 font-semibold">Desconto Concedido (R$)</label>
-                      <input
-                        type="number"
-                        value={desconto}
-                        onChange={(e) => setDesconto(Math.max(parseFloat(e.target.value) || 0, 0))}
-                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-800 font-semibold text-rose-600"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-500 mb-1 font-semibold">Valor Final Líquido (R$)</label>
-                      <div className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-700 font-bold text-sm">
-                        R$ {valorFinal.toFixed(2)}
+                  {/* Passenger Selector */}
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Passageiro Beneficiário *</label>
+                    <select
+                      value={passageiroId}
+                      onChange={(e) => setPassageiroId(e.target.value)}
+                      required
+                      autoFocus
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    >
+                      {passageiros.map(p => (
+                        <option key={p.id} value={p.id}>{p.nome} (CPF: {p.cpf})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Company Selector */}
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Linha / Empresa de Navegação *</label>
+                    <select
+                      value={empresaId}
+                      onChange={(e) => setEmpresaId(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    >
+                      {empresas.map(e => (
+                        <option key={e.id} value={e.id}>{e.nomeFantasia}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Vessel Selector (Filtered dynamically) */}
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Embarcação Credenciada *</label>
+                    <select
+                      value={embarcacaoId}
+                      onChange={(e) => setEmbarcacaoId(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    >
+                      {filteredVessels.length === 0 ? (
+                        <option value="">Nenhuma embarcação cadastrada para esta empresa</option>
+                      ) : (
+                        filteredVessels.map(v => (
+                          <option key={v.id} value={v.id}>{v.nome} ({v.tipo})</option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+
+                  {/* Accommodation Selector */}
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Tipo de Acomodação *</label>
+                    <select
+                      value={acomodacaoId}
+                      onChange={(e) => setAcomodacaoId(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    >
+                      {acomodacoes.map(a => (
+                        <option key={a.id} value={a.id}>{a.nome}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Date Picker */}
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Data Programada da Viagem *</label>
+                    <input
+                      type="date"
+                      value={dataViagem}
+                      onChange={(e) => setDataViagem(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    />
+                  </div>
+
+                  {/* Trip type */}
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Modalidade da Viagem *</label>
+                    <select
+                      value={tipoViagem}
+                      onChange={(e) => setTipoViagem(e.target.value as any)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    >
+                      <option value="Ida">Somente Ida</option>
+                      <option value="Volta">Somente Volta</option>
+                      <option value="Ida e Volta">Ida e Volta</option>
+                    </select>
+                  </div>
+
+                  {/* Rota Destino presets or typed */}
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Rota de Viagem / Destino *</label>
+                    <select
+                      value={destino}
+                      onChange={(e) => setDestino(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    >
+                      {destinosPresets.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Travel Motive Reason */}
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Motivo da Concessão *</label>
+                    <select
+                      value={motivoId}
+                      onChange={(e) => setMotivoId(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    >
+                      {motivos.map(m => (
+                        <option key={m.id} value={m.id}>{m.nome}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Authorizer Signee */}
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Autorizador / Deferente *</label>
+                    <select
+                      value={autorizadorId}
+                      onChange={(e) => setAutorizadorId(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    >
+                      {autorizadores.map(a => (
+                        <option key={a.id} value={a.id}>{a.nome} ({a.cargo})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Status selection */}
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Status da Passagem</label>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as PassagemStatus)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    >
+                      <option value="Solicitada">Solicitada (Rascunho)</option>
+                      <option value="Aprovada">Aprovada (Defera)</option>
+                      <option value="Emitida">Emitida (Liberada)</option>
+                      {/* Operator CANNOT cancel unless Admin! Let's restrict cancel option in list */}
+                      {userPerfil === "Administrador" && <option value="Cancelada">Cancelada</option>}
+                    </select>
+                  </div>
+
+                  {/* Financial values card */}
+                  <div className="sm:col-span-2 p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3.5">
+                    <h4 className="text-xs font-bold text-slate-700 flex items-center uppercase tracking-wider">
+                      <DollarSign className="w-4 h-4 text-emerald-600 mr-1.5" /> Planilha de Custo e Tarifas
+                    </h4>
+                    
+                    <div className="grid grid-cols-3 gap-3 text-xs">
+                      <div>
+                        <label className="block text-slate-500 mb-1 font-semibold">Valor Bruto (R$)</label>
+                        <input
+                          type="number"
+                          value={valorOriginal}
+                          onChange={(e) => setValorOriginal(Math.max(parseFloat(e.target.value) || 0, 0))}
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-800 font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-500 mb-1 font-semibold">Desconto Concedido (R$)</label>
+                        <input
+                          type="number"
+                          value={desconto}
+                          onChange={(e) => setDesconto(Math.max(parseFloat(e.target.value) || 0, 0))}
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-800 font-semibold text-rose-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-500 mb-1 font-semibold">Valor Final Líquido (R$)</label>
+                        <div className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-700 font-bold text-sm">
+                          R$ {valorFinal.toFixed(2)}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Notes */}
-                <div className="sm:col-span-2">
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Observações / Justificativa Social</label>
-                  <textarea
-                    rows={2}
-                    value={observacoes}
-                    onChange={(e) => setObservacoes(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
-                  />
-                </div>
+                  {/* Notes */}
+                  <div className="sm:col-span-2">
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5 uppercase tracking-wide">Observações / Justificativa Social</label>
+                    <textarea
+                      rows={2}
+                      value={observacoes}
+                      onChange={(e) => setObservacoes(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
+                    />
+                  </div>
 
+                </div>
               </div>
 
-              <div className="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+              <div className="flex justify-end space-x-2 p-4 bg-slate-50 border-t border-slate-100 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}

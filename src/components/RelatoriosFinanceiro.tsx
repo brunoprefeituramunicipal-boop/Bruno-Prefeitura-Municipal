@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { formatarDataParaExibicao, obterDataAtualBelem } from "../utils/dateUtils";
 import { Passagem, Passageiro, Empresa, AuditLog, Embarcacao, Acomodacao, Motivo, Autorizador } from "../types";
 import { getLogs } from "../services/dbService";
 import { 
@@ -114,10 +115,10 @@ export default function RelatoriosFinanceiro({
 
     let matchesDate = true;
     if (startDate) {
-      matchesDate = matchesDate && new Date(p.dataViagem) >= new Date(startDate);
+      matchesDate = matchesDate && p.dataViagem >= startDate;
     }
     if (endDate) {
-      matchesDate = matchesDate && new Date(p.dataViagem) <= new Date(endDate);
+      matchesDate = matchesDate && p.dataViagem <= endDate;
     }
 
     return matchesPassenger && matchesCompany && matchesStatus && matchesDate;
@@ -365,7 +366,7 @@ export default function RelatoriosFinanceiro({
                             <span className="block font-medium">{getEmpresa(p.empresaId)?.nomeFantasia}</span>
                           </td>
                           <td className="py-3 px-4 font-semibold text-blue-600">{p.destino}</td>
-                          <td className="py-3 px-4">{new Date(p.dataViagem).toLocaleDateString("pt-BR")}</td>
+                          <td className="py-3 px-4">{formatarDataParaExibicao(p.dataViagem)}</td>
                           <td className="py-3 px-4">
                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
                               p.status === "Emitida" ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-amber-50 text-amber-600 border-amber-200"
@@ -481,7 +482,7 @@ export default function RelatoriosFinanceiro({
               <div className="grid grid-cols-2 gap-4 text-xs">
                 <div>
                   <span className="text-[9px] uppercase font-bold text-slate-400">Data de Saída</span>
-                  <p className="font-semibold text-slate-800">{new Date(printingTicket.dataViagem).toLocaleDateString("pt-BR")}</p>
+                  <p className="font-semibold text-slate-800">{formatarDataParaExibicao(printingTicket.dataViagem)}</p>
                 </div>
                 <div>
                   <span className="text-[9px] uppercase font-bold text-slate-400">Modalidade</span>
@@ -598,7 +599,7 @@ export default function RelatoriosFinanceiro({
             <div className="grid grid-cols-2 gap-4 text-xs p-4 bg-slate-50 border border-slate-200 rounded-xl">
               <div className="space-y-1 text-left">
                 <p><strong>Data/Hora de Emissão:</strong> {new Date().toLocaleString("pt-BR")}</p>
-                <p><strong>Período do Relatório:</strong> {startDate ? new Date(startDate + "T12:00:00").toLocaleDateString("pt-BR") : "Início"} a {endDate ? new Date(endDate + "T12:00:00").toLocaleDateString("pt-BR") : "Hoje"}</p>
+                <p><strong>Período do Relatório:</strong> {startDate ? formatarDataParaExibicao(startDate) : "Início"} a {endDate ? formatarDataParaExibicao(endDate) : "Hoje"}</p>
               </div>
               <div className="space-y-1 text-right">
                 <p><strong>Empresa de Navegação:</strong> {companyFilter === "Todos" ? "Todas as Empresas" : getEmpresa(companyFilter)?.nomeFantasia}</p>
