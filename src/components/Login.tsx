@@ -16,7 +16,8 @@ import {
   Mail, 
   AlertTriangle, 
   CheckCircle2, 
-  ArrowLeft 
+  ArrowLeft,
+  MessageCircle
 } from "lucide-react";
 
 interface LoginProps {
@@ -321,10 +322,18 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 </div>
 
                 <div className="text-center mt-4 border-t border-slate-100 pt-4">
-                  <p className="text-slate-400 text-[9px] uppercase font-bold tracking-wider leading-relaxed">
-                    Acesso Restrito. Credenciais iniciais do Administrador:<br />
-                    <code className="text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded ml-1">brunoprefeituramunicipal@gmail.com</code> /{" "}
-                    <code className="text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">admin@123</code>
+                  <p className="text-slate-400 text-[10px] font-bold tracking-wide leading-relaxed">
+                    Empresa DUO Digital – Portel/PA<br />
+                    Desenvolvedor: C A R Fontes – Tel.: (91) 99148-3436
+                    <a
+                      href="https://wa.me/5591991483436?text=Ol%C3%A1%21%20Conheci%20o%20Sistema%20SEGAF%20e%20gostaria%20de%20conhecer%20os%20servi%C3%A7os%20da%20DUO%20Digital.%20Tenho%20interesse%20em%20desenvolvimento%20de%20sites%2C%20landing%20pages%20e%20sistemas%20personalizados.%20Poder%C3%ADamos%20conversar%3F"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center ml-1.5 text-emerald-600 hover:text-emerald-500 transition-colors align-middle"
+                      title="Conversar no WhatsApp"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 fill-emerald-500 text-white" />
+                    </a>
                   </p>
                 </div>
               </form>

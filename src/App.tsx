@@ -539,6 +539,7 @@ export default function App() {
           passagens={passagens}
           passageiros={passageiros}
           empresas={empresas}
+          currentUserEmail={currentUser?.email || currentUser?.login || "usuario"}
         />
       )}
 

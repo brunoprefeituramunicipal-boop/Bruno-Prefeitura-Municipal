@@ -617,6 +617,7 @@ export default function RelatoriosFinanceiro({
                     <th className="border border-slate-300 p-2">Rota (Origem / Destino)</th>
                     <th className="border border-slate-300 p-2">Empresa / Embarcação</th>
                     <th className="border border-slate-300 p-2">Tipo / Acomodação</th>
+                    <th className="border border-slate-300 p-2 text-center">Data da Viagem</th>
                     <th className="border border-slate-300 p-2">Motivo</th>
                     <th className="border border-slate-300 p-2 text-right">Valor Passagem</th>
                     <th className="border border-slate-300 p-2 text-center">Status</th>
@@ -625,7 +626,7 @@ export default function RelatoriosFinanceiro({
                 <tbody>
                   {filteredReportTickets.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="border border-slate-300 p-4 text-center text-slate-400">Nenhum registro encontrado para os filtros selecionados.</td>
+                      <td colSpan={9} className="border border-slate-300 p-4 text-center text-slate-400">Nenhum registro encontrado para os filtros selecionados.</td>
                     </tr>
                   ) : (
                     filteredReportTickets.map(p => {
@@ -656,6 +657,9 @@ export default function RelatoriosFinanceiro({
                           <td className="border border-slate-300 p-2">
                             <span className="block"><strong>Tipo:</strong> {p.tipoViagem}</span>
                             <span className="block"><strong>Acomodação:</strong> {aco?.nome || "Livre"}</span>
+                          </td>
+                          <td className="border border-slate-300 p-2 text-center font-medium">
+                            {formatarDataParaExibicao(p.dataViagem)}
                           </td>
                           <td className="border border-slate-300 p-2">
                             <span className="block truncate max-w-[120px]" title={mot?.nome}>{mot?.nome || "Outros"}</span>

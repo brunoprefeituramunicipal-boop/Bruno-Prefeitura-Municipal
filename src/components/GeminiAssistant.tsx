@@ -6,6 +6,7 @@ interface GeminiAssistantProps {
   passagens: Passagem[];
   passageiros: Passageiro[];
   empresas: Empresa[];
+  currentUserEmail?: string;
 }
 
 interface Message {
@@ -13,7 +14,7 @@ interface Message {
   text: string;
 }
 
-export default function GeminiAssistant({ passagens, passageiros, empresas }: GeminiAssistantProps) {
+export default function GeminiAssistant({ passagens, passageiros, empresas, currentUserEmail }: GeminiAssistantProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
@@ -23,7 +24,56 @@ export default function GeminiAssistant({ passagens, passageiros, empresas }: Ge
     }
   ]);
   const [loading, setLoading] = useState(false);
+  const [queriesLeft, setQueriesLeft] = useState<number>(10);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const getQueriesLeft = (): number => {
+    const today = new Date().toISOString().split("T")[0];
+    const storageKey = `segaf_copilot_usage_${currentUserEmail || "usuario"}`;
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.date === today) {
+          return Math.max(0, 10 - parsed.count);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return 10;
+  };
+
+  const checkAndIncrementUsage = (): boolean => {
+    const today = new Date().toISOString().split("T")[0];
+    const storageKey = `segaf_copilot_usage_${currentUserEmail || "usuario"}`;
+    try {
+      const stored = localStorage.getItem(storageKey);
+      let usage = { date: today, count: 0 };
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.date === today) {
+          usage = parsed;
+        }
+      }
+      if (usage.count >= 10) {
+        return false;
+      }
+      usage.count += 1;
+      localStorage.setItem(storageKey, JSON.stringify(usage));
+      setQueriesLeft(Math.max(0, 10 - usage.count));
+      return true;
+    } catch (e) {
+      console.error(e);
+      return true;
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      setQueriesLeft(getQueriesLeft());
+    }
+  }, [isOpen, messages]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -65,6 +115,18 @@ export default function GeminiAssistant({ passagens, passageiros, empresas }: Ge
     setInput("");
     setMessages(prev => [...prev, { sender: "user", text: userText }]);
     setLoading(true);
+
+    if (!checkAndIncrementUsage()) {
+      setLoading(false);
+      setMessages(prev => [
+        ...prev,
+        {
+          sender: "bot",
+          text: "Você atingiu o limite diário de consultas gratuitas do SEGAF Copilot. Novas consultas estarão disponíveis amanhã."
+        }
+      ]);
+      return;
+    }
 
     try {
       // Gather current real-time database snapshot for grounding
@@ -135,6 +197,7 @@ export default function GeminiAssistant({ passagens, passageiros, empresas }: Ge
     <>
       {/* Floating Button */}
       <button
+        id="toggle-copilot-btn"
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 z-40 p-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-full shadow-2xl border border-blue-400/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center space-x-2 no-print group"
       >
@@ -157,10 +220,15 @@ export default function GeminiAssistant({ passagens, passageiros, empresas }: Ge
                   <h3 className="text-sm font-bold flex items-center">
                     SEGAF Copilot <Sparkles className="w-3.5 h-3.5 text-yellow-300 ml-1.5" />
                   </h3>
-                  <span className="text-[10px] text-emerald-400 font-medium flex items-center">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-ping" />
-                    Gemini 3.5 Flash Conectado
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-emerald-400 font-medium flex items-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-ping" />
+                      Gemini 3.5 Flash Conectado
+                    </span>
+                    <span className="text-[9px] text-slate-400 font-semibold tracking-wide uppercase mt-0.5">
+                      Cota Gratuita: {queriesLeft}/10 restantes hoje
+                    </span>
+                  </div>
                 </div>
               </div>
               <button 

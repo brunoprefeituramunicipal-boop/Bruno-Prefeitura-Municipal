@@ -46,7 +46,12 @@ Regras de comportamento:
 5. Se os dados necessários não estiverem no contexto, informe educadamente que precisa de mais dados ou que o registro correspondente não foi encontrado.
 6. Nunca invente dados que não existem no contexto real de passagens. Use sempre os dados fornecidos.`;
 
-    const response = await ai.models.generateContent({
+    // Enforce a 15-second timeout on the Gemini API call to guarantee responsiveness
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Timeout de conexão: O motor do Gemini demorou muito para responder. Tente novamente.")), 15000)
+    );
+
+    const apiCallPromise = ai.models.generateContent({
       model: "gemini-3.5-flash",
       contents: [
         { text: message + contextStr }
@@ -56,6 +61,8 @@ Regras de comportamento:
         temperature: 0.7,
       },
     });
+
+    const response = await Promise.race([apiCallPromise, timeoutPromise]) as any;
 
     const responseText = response.text || "Desculpe, não consegui processar sua solicitação.";
     res.json({ text: responseText });
