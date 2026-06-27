@@ -77,6 +77,14 @@ export default function Usuarios({ currentUser, onRefresh }: UsuariosProps) {
   const [perfil, setPerfil] = useState<UserPerfil>("Operador");
   const [status, setStatus] = useState<UserStatus>("Ativo");
 
+  // Auto-scroll when modal opens
+  React.useEffect(() => {
+    if (isModalOpen) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [isModalOpen]);
+
   // Personal Password Change states
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -545,8 +553,8 @@ export default function Usuarios({ currentUser, onRefresh }: UsuariosProps) {
 
       {/* ADD/EDIT USER MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-xl overflow-hidden">
+        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-xl overflow-hidden my-auto animate-fadeIn">
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                 <UserIcon className="w-4 h-4 text-blue-600" />
@@ -574,6 +582,7 @@ export default function Usuarios({ currentUser, onRefresh }: UsuariosProps) {
                     value={nome}
                     onChange={(e) => setNome(e.target.value)}
                     placeholder="Nome do colaborador"
+                    autoFocus
                     className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs focus:outline-none focus:border-blue-500 transition-all"
                     required
                   />

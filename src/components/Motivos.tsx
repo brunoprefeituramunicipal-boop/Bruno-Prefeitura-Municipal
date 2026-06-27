@@ -21,6 +21,14 @@ export default function Motivos({ motivos, userPerfil, userLogin, onRefresh }: M
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Auto-scroll when modal opens
+  React.useEffect(() => {
+    if (isModalOpen) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [isModalOpen]);
+
   const openAddModal = () => {
     setEditingMot(null);
     setNome("");
@@ -144,8 +152,8 @@ export default function Motivos({ motivos, userPerfil, userLogin, onRefresh }: M
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all my-auto">
             <div className="bg-slate-900 p-5 text-white flex justify-between items-center">
               <h3 className="text-sm font-bold flex items-center space-x-2">
                 <ClipboardList className="w-5 h-5 text-amber-400" />
@@ -170,6 +178,7 @@ export default function Motivos({ motivos, userPerfil, userLogin, onRefresh }: M
                     value={nome}
                     onChange={(e) => setNome(e.target.value)}
                     required
+                    autoFocus
                     placeholder="Ex: Tratamento de Saúde (TFD)"
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-amber-500 transition"
                   />

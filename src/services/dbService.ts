@@ -15,8 +15,10 @@ import {
   onSnapshot,
   writeBatch
 } from "firebase/firestore";
+import { getApps, initializeApp } from "firebase/app";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { db, auth, handleFirestoreError, OperationType } from "../firebase";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import firebaseConfig from "../../firebase-applet-config.json";
 import { 
   User, 
   Passageiro, 
@@ -322,76 +324,87 @@ export async function seedDatabaseIfEmpty(): Promise<void> {
     let brunoUid = "";
     let brunoCreated = false;
 
-    // First, try to sign in with the target credentials to verify if they work
-    try {
-      const cred = await signInWithEmailAndPassword(auth, brunoEmail, "admin123");
-      brunoUid = cred.user.uid;
-      brunoCreated = true; // Mark as logged in so we sign them out later during cleanup
-      console.log(`Usuário ${brunoEmail} autenticado com sucesso no seed.`);
-    } catch (loginErr: any) {
-      console.log(`Não foi possível fazer login direto com ${brunoEmail}. Erro: ${loginErr.code || loginErr.message}. Tentando criar ou recuperar...`);
-      // Sign in failed, so let's try to create the user in Auth
+    // Check if Bruno doc already exists in Firestore.
+    // If it does, we do NOT need to run any Auth seeding operations for Bruno, which saves time and prevents auth triggers.
+    const brunoUserQuery = query(collection(db, "users"), where("email", "==", brunoEmail));
+    const brunoUserSnap = await getDocs(brunoUserQuery);
+
+    // Initialize temporary isolated Auth to perform any required user creation without changing the default Auth singleton's state.
+    const tempAppName = "segaf-seed-app";
+    const existingApps = getApps();
+    const tempApp = existingApps.find(app => app.name === tempAppName) 
+      || initializeApp(firebaseConfig, tempAppName);
+    const tempAuth = getAuth(tempApp);
+
+    if (brunoUserSnap.empty) {
+      console.log(`Usuário Administrador ${brunoEmail} não encontrado no Firestore. Iniciando fluxo de seeding isolado.`);
+      
+      // First, try to sign in with the target credentials on the isolated tempAuth instance to verify if they work
       try {
-        const cred = await createUserWithEmailAndPassword(auth, brunoEmail, "admin123");
+        const cred = await signInWithEmailAndPassword(tempAuth, brunoEmail, "admin123");
         brunoUid = cred.user.uid;
-        brunoCreated = true;
-        console.log(`Usuário ${brunoEmail} criado no Auth com UID: ${brunoUid}`);
-      } catch (authErr: any) {
-        if (authErr.code === "auth/email-already-in-use") {
-          console.log(`E-mail ${brunoEmail} já cadastrado no Auth, mas com senha diferente.`);
-          // If already in use but login failed, find the UID from Firestore or fallback
-          const brunoQuery = query(collection(db, "users"), where("email", "==", brunoEmail));
-          const brunoSnap = await getDocs(brunoQuery);
-          if (!brunoSnap.empty) {
-            brunoUid = brunoSnap.docs[0].id;
+        brunoCreated = true; // Mark as logged in on tempAuth so we sign them out later during cleanup
+        console.log(`Usuário ${brunoEmail} autenticado com sucesso no seed isolado.`);
+      } catch (loginErr: any) {
+        console.log(`Não foi possível fazer login direto com ${brunoEmail} no seed. Erro: ${loginErr.code || loginErr.message}. Tentando criar ou recuperar...`);
+        // Sign in failed, so let's try to create the user in isolated Auth
+        try {
+          const cred = await createUserWithEmailAndPassword(tempAuth, brunoEmail, "admin123");
+          brunoUid = cred.user.uid;
+          brunoCreated = true;
+          console.log(`Usuário ${brunoEmail} criado no Auth isolado com UID: ${brunoUid}`);
+        } catch (authErr: any) {
+          if (authErr.code === "auth/email-already-in-use") {
+            console.log(`E-mail ${brunoEmail} já cadastrado no Auth, mas com senha diferente.`);
+            brunoUid = "bruno_admin_default";
           } else {
+            console.error("Erro ao criar Bruno no Auth isolado:", authErr);
             brunoUid = "bruno_admin_default";
           }
-        } else {
-          console.error("Erro ao criar Bruno no Auth:", authErr);
-          brunoUid = "bruno_admin_default";
         }
+      }
+
+      if (brunoUid) {
+        const brunoUserDocRef = doc(db, "users", brunoUid);
+        const brunoUserDoc = await getDoc(brunoUserDocRef);
+        
+        if (!brunoUserDoc.exists()) {
+          const brunoUser: User = {
+            id: brunoUid,
+            nome: "Bruno Administrador",
+            email: brunoEmail,
+            perfil: "Administrador",
+            status: "Ativo",
+            primeiroAcesso: false,
+            criadoEm: new Date().toISOString(),
+            alteradoEm: new Date().toISOString()
+          };
+          await setDoc(brunoUserDocRef, brunoUser);
+          console.log(`Documento Firestore para ${brunoEmail} criado com ID: ${brunoUid}`);
+        }
+      }
+    } else {
+      const existingDoc = brunoUserSnap.docs[0];
+      brunoUid = existingDoc.id;
+      // Ensure existing profile has the correct permissions
+      const existingData = existingDoc.data() as User;
+      if (existingData.perfil !== "Administrador" || existingData.status !== "Ativo") {
+        await setDoc(doc(db, "users", brunoUid), {
+          ...existingData,
+          perfil: "Administrador" as const,
+          status: "Ativo" as const,
+          alteradoEm: new Date().toISOString()
+        }, { merge: true });
+        console.log(`Perfil/Status do usuário ${brunoEmail} sincronizado no Firestore.`);
       }
     }
 
-    if (brunoUid) {
-      const brunoUserDocRef = doc(db, "users", brunoUid);
-      const brunoUserDoc = await getDoc(brunoUserDocRef);
-      
-      if (!brunoUserDoc.exists()) {
-        const brunoUser: User = {
-          id: brunoUid,
-          nome: "Bruno Administrador",
-          email: brunoEmail,
-          perfil: "Administrador",
-          status: "Ativo",
-          primeiroAcesso: false,
-          criadoEm: new Date().toISOString(),
-          alteradoEm: new Date().toISOString()
-        };
-        await setDoc(brunoUserDocRef, brunoUser);
-        console.log(`Documento Firestore para ${brunoEmail} criado com ID: ${brunoUid}`);
-      } else {
-        // Ensure profile details are correct
-        const existingData = brunoUserDoc.data() as User;
-        if (existingData.perfil !== "Administrador" || existingData.status !== "Ativo") {
-          await setDoc(brunoUserDocRef, {
-            ...existingData,
-            perfil: "Administrador" as const,
-            status: "Ativo" as const,
-            alteradoEm: new Date().toISOString()
-          }, { merge: true });
-          console.log(`Perfil/Status do usuário ${brunoEmail} sincronizado no Firestore.`);
-        }
-      }
-
-      // Cleanup duplicate/fallback records if they exist and are different from the real UID
-      if (brunoUid !== "bruno_admin_default") {
-        try {
-          await deleteDoc(doc(db, "users", "bruno_admin_default"));
-        } catch (e) {
-          // ignore
-        }
+    // Cleanup duplicate/fallback records if they exist and are different from the real UID
+    if (brunoUid && brunoUid !== "bruno_admin_default") {
+      try {
+        await deleteDoc(doc(db, "users", "bruno_admin_default"));
+      } catch (e) {
+        // ignore
       }
     }
 
@@ -400,17 +413,23 @@ export async function seedDatabaseIfEmpty(): Promise<void> {
     if (acomodacoesSnap.empty) {
       console.log("Iniciando auto-seeding de dados iniciais...");
 
-      // Let's also create the default operator for testing/grading if they want
+      // Let's also create the default operator for testing/grading if they want, using isolated tempAuth
       let operadorUid = "operador_default";
       try {
-        const cred = await createUserWithEmailAndPassword(auth, "operador@segaf.portel.pa.gov.br", "Operador@123");
+        const cred = await createUserWithEmailAndPassword(tempAuth, "operador@segaf.portel.pa.gov.br", "Operador@123");
         operadorUid = cred.user.uid;
         brunoCreated = true;
       } catch (authErr: any) {
         if (authErr.code === "auth/email-already-in-use") {
           console.log("Operador email já cadastrado no Auth.");
+          // Try to look up UID if it already exists
+          const opQuery = query(collection(db, "users"), where("email", "==", "operador@segaf.portel.pa.gov.br"));
+          const opSnap = await getDocs(opQuery);
+          if (!opSnap.empty) {
+            operadorUid = opSnap.docs[0].id;
+          }
         } else {
-          console.error("Erro ao criar operador no Auth:", authErr);
+          console.error("Erro ao criar operador no Auth isolado:", authErr);
         }
       }
 
@@ -489,14 +508,15 @@ export async function seedDatabaseIfEmpty(): Promise<void> {
       }
 
       // 6. Criar embarcações padrão
-      const embarcacoesPadrao = [
+      const canvasPadrao = [
         { id: "emb_1", nome: "Navio Arapari V", tipo: "Navio" as const, empresaId: "emp_1", capacidade: 350, status: "Ativo" as const },
         { id: "emb_2", nome: "Balsa Marajó Express", tipo: "Balsa" as const, empresaId: "emp_2", capacidade: 180, status: "Ativo" as const },
         { id: "emb_3", nome: "Lancha Portel Veloz", tipo: "Lancha" as const, empresaId: "emp_1", capacidade: 60, status: "Ativo" as const }
       ];
-      for (const emb of embarcacoesPadrao) {
+      for (const emb of canvasPadrao) {
         await setDoc(doc(db, "embarcacoes", emb.id), emb);
       }
+
       // 7. Criar autorizadores padrão
       const autorizadoresPadrao = [
         { id: "aut_1", nome: "Dr. Roberto de Souza", cargo: "Secretário Executivo", setor: "Gabinete SEGAF", status: "Ativo" as const },
@@ -629,12 +649,12 @@ export async function seedDatabaseIfEmpty(): Promise<void> {
       console.log("Auto-seeding concluído com sucesso!");
     }
 
-    // Always log out if we called createUserWithEmailAndPassword in this process to prevent hijacking current session
+    // Always log out of tempAuth if we logged in or created any user on it to prevent token residue
     if (brunoCreated) {
       try {
-        await signOut(auth);
+        await signOut(tempAuth);
       } catch (soErr) {
-        console.warn("Erro ao fazer signout pós seed:", soErr);
+        console.warn("Erro ao fazer signout pós seed isolado:", soErr);
       }
     }
   } catch (err) {

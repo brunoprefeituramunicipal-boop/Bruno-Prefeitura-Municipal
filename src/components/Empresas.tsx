@@ -48,6 +48,14 @@ export default function Empresas({ empresas, userPerfil, userLogin, onRefresh }:
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Auto-scroll when modal opens
+  React.useEffect(() => {
+    if (isModalOpen) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [isModalOpen]);
+
   const openAddModal = () => {
     setEditingEmpresa(null);
     setRazaoSocial("");
@@ -339,6 +347,7 @@ export default function Empresas({ empresas, userPerfil, userLogin, onRefresh }:
                     value={razaoSocial}
                     onChange={(e) => setRazaoSocial(e.target.value)}
                     required
+                    autoFocus
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
                   />
                 </div>

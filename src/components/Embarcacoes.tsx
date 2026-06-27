@@ -29,6 +29,14 @@ export default function Embarcacoes({ embarcacoes, empresas, userPerfil, userLog
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Auto-scroll when modal opens
+  React.useEffect(() => {
+    if (isModalOpen) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [isModalOpen]);
+
   const getEmpresaName = (id: string) => {
     return empresas.find(e => e.id === id)?.nomeFantasia || "Empresa não cadastrada";
   };
@@ -229,10 +237,10 @@ export default function Embarcacoes({ embarcacoes, empresas, userPerfil, userLog
         )}
       </div>
 
-      {/* Form Dialog Modal */}
+       {/* Form Dialog Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all my-auto">
             <div className="bg-slate-900 p-5 text-white flex justify-between items-center">
               <h3 className="text-sm font-bold flex items-center space-x-2">
                 <Ship className="w-5 h-5 text-cyan-400" />
@@ -262,6 +270,7 @@ export default function Embarcacoes({ embarcacoes, empresas, userPerfil, userLog
                     value={nome}
                     onChange={(e) => setNome(e.target.value)}
                     required
+                    autoFocus
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-cyan-500 transition"
                   />
                 </div>

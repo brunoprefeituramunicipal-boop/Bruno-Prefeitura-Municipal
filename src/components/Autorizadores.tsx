@@ -23,6 +23,14 @@ export default function Autorizadores({ autorizadores, userPerfil, userLogin, on
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Auto-scroll when modal opens
+  React.useEffect(() => {
+    if (isModalOpen) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [isModalOpen]);
+
   // Canvas Drawing references for digital signature pad
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -269,6 +277,7 @@ export default function Autorizadores({ autorizadores, userPerfil, userLogin, on
                     value={nome}
                     onChange={(e) => setNome(e.target.value)}
                     required
+                    autoFocus
                     placeholder="Ex: Dr. Roberto Portel"
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-amber-500 transition"
                   />

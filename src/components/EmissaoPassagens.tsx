@@ -83,6 +83,14 @@ export default function EmissaoPassagens({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Auto-scroll when modal opens
+  useEffect(() => {
+    if (isModalOpen) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [isModalOpen]);
+
   // Quick destinations presets
   const destinosPresets = [
     "Portel / Belém",
@@ -408,6 +416,7 @@ export default function EmissaoPassagens({
                     value={passageiroId}
                     onChange={(e) => setPassageiroId(e.target.value)}
                     required
+                    autoFocus
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition"
                   >
                     {passageiros.map(p => (

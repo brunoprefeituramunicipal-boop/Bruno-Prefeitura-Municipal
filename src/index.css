@@ -13,21 +13,94 @@ body {
   color: #0f172a;
 }
 
-/* Custom printer styles for voucher ticket printing */
+/* Custom printer styles for voucher ticket printing and consolidated reports */
 @media print {
-  body {
-    background-color: white !important;
-    color: black !important;
+  /* Hide every single element in the system by default */
+  body * {
+    visibility: hidden !important;
   }
-  .no-print {
-    display: none !important;
+  
+  /* Make the print-only container and all its descendants visible */
+  .print-only, 
+  .print-only *, 
+  [id="print-area"], 
+  [id="print-area"] *, 
+  [id="print-area-consolidated"], 
+  [id="print-area-consolidated"] * {
+    visibility: visible !important;
   }
-  .print-only {
+
+  /* Force the printed area to render as a natural block at the very top of the page */
+  .print-only, 
+  [id="print-area"], 
+  [id="print-area-consolidated"] {
     display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    z-index: 9999 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    border: none !important;
   }
+
+  /* Ensure standard container parents don't clip the printed page */
+  html, body, #root {
+    background: white !important;
+    color: black !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    position: static !important;
+  }
+
+  /* Ensure text, headers, and backgrounds print in pure high-contrast black/white */
+  th, td, p, h1, h2, h3, h4, span, strong, div {
+    color: black !important;
+    background: transparent !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Custom table printing rules to prevent raw cutting across pages */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+  }
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+  thead {
+    display: table-header-group !important;
+  }
+  tbody {
+    display: table-row-group !important;
+  }
+  th, td {
+    border: 1px solid #000000 !important; /* solid black border for high-quality printing */
+    padding: 6px 8px !important;
+  }
+
+  /* Signatures section page breaking rules */
+  .grid-cols-2 {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 3rem !important;
+    page-break-inside: avoid !important;
+  }
+
   @page {
-    margin: 1cm;
-    size: A4;
+    margin: 1.5cm 1.2cm 1.5cm 1.2cm;
+    size: A4 portrait;
   }
 }
 
